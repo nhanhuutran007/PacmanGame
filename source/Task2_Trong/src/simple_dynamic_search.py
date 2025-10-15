@@ -1,16 +1,12 @@
 import heapq
-import time
-import random
 from collections import deque
-from state import State
 from action import Direction
-from game import Layout
 from search import simulate_ghost_states, simulate_single_ghost_state
 
 class AStarDynamicSearch:
     """
-    A* động: mỗi bước chạy A* với heuristic Manhattan đơn giản
-    để tìm đường ngắn nhất tới thức ăn gần nhất (hết thức ăn thì tới exit).
+    Tìm kiếm A* động theo từng bước với heuristic không dựa trên Manhattan,
+    kết hợp đánh giá rủi ro từ ma và bộ nhớ vị trí để tránh lặp.
     """
     def __init__(self, problem, corners):
         self.problem = problem
@@ -21,14 +17,14 @@ class AStarDynamicSearch:
 
     def find_next_action(self, current_state, ghosts):
         """
-        Tính đường đi ngắn nhất (BFS) từ vị trí hiện tại đến mục tiêu gần nhất
+        Tính đường đi (A*) từ vị trí hiện tại đến mục tiêu gần nhất
         rồi trả về hành động đầu tiên trong đường đi đó.
         """
         # Cập nhật bộ nhớ vị trí gần đây
         if not self.recent_positions or self.recent_positions[-1] != current_state.pos:
             self.recent_positions.append(current_state.pos)
 
-        path = self._a_star_to_goal(current_state, ghosts)
+        path = self.aStarToGoal(current_state, ghosts)
         if not path:
             return Direction.STOP
 
@@ -37,8 +33,8 @@ class AStarDynamicSearch:
         first_dir = path[0]
         dx, dy = Direction._directions[first_dir]
         first_pos = (start_pos[0] + dx, start_pos[1] + dy)
-        if self._is_step_dangerous(start_pos, first_pos, ghosts, step=1):
-            alt_dir = self._choose_safer_alternative(start_pos, ghosts)
+        if self.isStepDangerous(start_pos, first_pos, ghosts, step=1):
+            alt_dir = self.chooseSaferAlternative(start_pos, ghosts)
             self.last_selected_action = alt_dir if alt_dir is not None else first_dir
             return self.last_selected_action
 
@@ -48,7 +44,7 @@ class AStarDynamicSearch:
     # --------------------------
     #  A* core
     # --------------------------
-    def _a_star_to_goal(self, current_state, ghosts):
+    def aStarToGoal(self, current_state, ghosts):
         start = current_state.pos
         # Luôn dùng lưới thức ăn mới nhất từ game (tránh lệch trạng thái)
         food_grid = self.problem.getFoodGrid()
@@ -59,7 +55,7 @@ class AStarDynamicSearch:
                         for x in range(len(food_grid[y])) if food_grid[y][x]]
         if food_targets:
             def h(pos):
-                # Heuristic KHÔNG dùng Manhattan: dựa trên mật độ thức ăn lân cận
+                # Heuristic dựa trên mật độ thức ăn lân cận
                 px, py = pos
                 local_count = 0
                 radius = 2  # cửa sổ 5x5
@@ -78,7 +74,7 @@ class AStarDynamicSearch:
             if not exits:
                 return []
             def h(pos):
-                # Heuristic KHÔNG dùng Manhattan: dùng Chebyshev tới cổng exit gần nhất
+                # Heuristic dùng Chebyshev tới cổng exit gần nhất
                 px, py = pos
                 return min(max(abs(px - ex), abs(py - ey)) for (ex, ey) in exits)
             def is_goal(pos):
@@ -154,7 +150,7 @@ class AStarDynamicSearch:
 
                 # Giảm lắc lư: phạt nhẹ khi đảo hướng so với bước trước
                 last_dir = path[-1] if path else current_state.direction
-                if self._is_reverse_direction(last_dir, direction):
+                if self.isReverseDirection(last_dir, direction):
                     step_risk += 2
 
                 # Tránh quay lại ô vừa đi: phạt mạnh nếu next_pos == vị trí trước đó
@@ -177,12 +173,12 @@ class AStarDynamicSearch:
                 return [direction]
         return []
 
-    # Heuristic đã tích hợp trực tiếp trong _a_star_to_goal
+    # Heuristic tích hợp trực tiếp trong aStarToGoal
 
     # --------------------------
     #  Helpers: đánh giá rủi ro và chọn đường vòng an toàn
     # --------------------------
-    def _is_step_dangerous(self, from_pos, to_pos, ghosts, step: int) -> bool:
+    def isStepDangerous(self, from_pos, to_pos, ghosts, step: int) -> bool:
         try:
             # va chạm trực tiếp ở bước 'step'
             predicted = {(gx, gy) for (gx, gy, _d) in simulate_ghost_states(self.problem.layout, ghosts, step)}
@@ -202,7 +198,7 @@ class AStarDynamicSearch:
             return False
         return False
 
-    def _choose_safer_alternative(self, start_pos, ghosts):
+    def chooseSaferAlternative(self, start_pos, ghosts):
         best_dir = None
         best_risk = float('inf')
         for next_pos, direction, step_cost in self.problem.getSuccessors(start_pos):
@@ -231,7 +227,7 @@ class AStarDynamicSearch:
                 best_dir = direction
         return best_dir
 
-    def _is_reverse_direction(self, prev_dir, new_dir):
+    def isReverseDirection(self, prev_dir, new_dir):
         if prev_dir == Direction.NORTH and new_dir == Direction.SOUTH:
             return True
         if prev_dir == Direction.SOUTH and new_dir == Direction.NORTH:
