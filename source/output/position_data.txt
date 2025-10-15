@@ -1,0 +1,245 @@
+=== PACMAN GAME POSITION DATA ===
+Generated at: 2025-10-13 17:29:51
+Total steps: 118
+Total cost: 5543.5
+==================================================
+
+Step 1: West at (16, 1)
+Step 2: West at (15, 1)
+Step 3: West at (14, 1)
+Step 4: West at (13, 1)
+Step 5: West at (12, 1)
+Step 6: West at (11, 1)
+Step 7: West at (10, 1)
+Step 8: West at (9, 1)
+Step 9: West at (8, 1)
+Step 10: East at (9, 1)
+Step 11: East at (10, 1)
+Step 12: East at (11, 1)
+Step 13: East at (12, 1)
+Step 14: East at (13, 1)
+Step 15: East at (14, 1)
+Step 16: East at (15, 1)
+Step 17: East at (16, 1)
+Step 18: East at (17, 1)
+Step 19: East at (18, 1)
+Step 20: East at (19, 1)
+Step 21: East at (20, 1)
+Step 22: East at (21, 1)
+Step 23: East at (22, 1)
+Step 24: East at (23, 1)
+Step 25: East at (24, 1)
+Step 26: East at (25, 1)
+Step 27: South at (25, 2)
+Step 28: South at (25, 3)
+Step 29: East at (26, 3)
+Step 30: East at (27, 3)
+Step 31: South at (27, 4)
+Step 32: South at (27, 5)
+Step 33: South at (27, 6)
+Step 34: West at (26, 6)
+Step 35: East at (27, 6)
+Step 36: North at (27, 5)
+Step 37: North at (27, 4)
+Step 38: North at (27, 3)
+Step 39: West at (26, 3)
+Step 40: West at (25, 3)
+Step 41: North at (25, 2)
+Step 42: North at (25, 1)
+Step 43: East at (26, 1)
+Step 44: East at (27, 1)
+Step 45: East at (28, 1)
+Step 46: East at (29, 1)
+Step 47: East at (30, 1)
+Step 48: East at (31, 1)
+Step 49: East at (32, 1)
+Step 50: East at (33, 1)
+Step 51: East at (34, 1)
+Step 52: North at (1, 16)
+Step 53: East at (2, 16)
+Step 54: East at (3, 16)
+Step 55: East at (4, 16)
+Step 56: East at (5, 16)
+Step 57: East at (6, 16)
+Step 58: East at (7, 16)
+Step 59: East at (8, 16)
+Step 60: East at (9, 16)
+Step 61: East at (10, 16)
+Step 62: North at (10, 15)
+Step 63: East at (11, 15)
+Step 64: East at (12, 15)
+Step 65: East at (13, 15)
+Step 66: East at (14, 15)
+Step 67: East at (15, 15)
+Step 68: North at (15, 14)
+Step 69: North at (15, 13)
+Step 70: East at (16, 13)
+Step 71: East at (17, 13)
+Step 72: East at (18, 13)
+Step 73: East at (19, 13)
+Step 74: North at (19, 12)
+Step 75: North at (19, 11)
+Step 76: North at (19, 10)
+Step 77: East at (20, 10)
+Step 78: East at (21, 10)
+Step 79: East at (22, 10)
+Step 80: West at (21, 10)
+Step 81: West at (20, 10)
+Step 82: West at (19, 10)
+Step 83: South at (19, 11)
+Step 84: West at (18, 11)
+Step 85: West at (17, 11)
+Step 86: West at (16, 11)
+Step 87: West at (15, 11)
+Step 88: West at (14, 11)
+Step 89: West at (13, 11)
+Step 90: South at (13, 12)
+Step 91: South at (13, 13)
+Step 92: West at (12, 13)
+Step 93: West at (11, 13)
+Step 94: West at (10, 13)
+Step 95: West at (9, 13)
+Step 96: East at (10, 13)
+Step 97: East at (11, 13)
+Step 98: East at (12, 13)
+Step 99: East at (13, 13)
+Step 100: North at (13, 12)
+Step 101: North at (13, 11)
+Step 102: East at (14, 11)
+Step 103: East at (15, 11)
+Step 104: East at (16, 11)
+Step 105: East at (17, 11)
+Step 106: East at (18, 11)
+Step 107: East at (19, 11)
+Step 108: South at (19, 12)
+Step 109: South at (19, 13)
+Step 110: West at (18, 13)
+Step 111: West at (17, 13)
+Step 112: West at (16, 13)
+Step 113: West at (15, 13)
+Step 114: South at (15, 14)
+Step 115: South at (15, 15)
+Step 116: East at (16, 15)
+Step 117: East at (17, 15)
+Step 118: East at (18, 15)
+
+==================================================
+ACTIONS SEQUENCE:
+1. West
+2. West
+3. West
+4. West
+5. West
+6. West
+7. West
+8. West
+9. West
+10. East
+11. East
+12. East
+13. East
+14. East
+15. East
+16. East
+17. East
+18. East
+19. East
+20. East
+21. East
+22. East
+23. East
+24. East
+25. East
+26. East
+27. South
+28. South
+29. East
+30. East
+31. South
+32. South
+33. South
+34. West
+35. East
+36. North
+37. North
+38. North
+39. West
+40. West
+41. North
+42. North
+43. East
+44. East
+45. East
+46. East
+47. East
+48. East
+49. East
+50. East
+51. East
+52. North
+53. East
+54. East
+55. East
+56. East
+57. East
+58. East
+59. East
+60. East
+61. East
+62. North
+63. East
+64. East
+65. East
+66. East
+67. East
+68. North
+69. North
+70. East
+71. East
+72. East
+73. East
+74. North
+75. North
+76. North
+77. East
+78. East
+79. East
+80. West
+81. West
+82. West
+83. South
+84. West
+85. West
+86. West
+87. West
+88. West
+89. West
+90. South
+91. South
+92. West
+93. West
+94. West
+95. West
+96. East
+97. East
+98. East
+99. East
+100. North
+101. North
+102. East
+103. East
+104. East
+105. East
+106. East
+107. East
+108. South
+109. South
+110. West
+111. West
+112. West
+113. West
+114. South
+115. South
+116. East
+117. East
+118. East
