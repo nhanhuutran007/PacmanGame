@@ -103,7 +103,7 @@ class GameRenderer:
         center_y = self.info_bar_height // 2
         
         # Tạo text
-        step_text = f"Step: {step_count}/{total_steps}"
+        step_text = f"Step: {step_count}"
         text_surface = font.render(step_text, True, (255, 255, 255))
         text_rect = text_surface.get_rect(center=(center_x, center_y))
         

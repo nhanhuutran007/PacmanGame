@@ -1,7 +1,7 @@
 from game import Layout
 from action import Direction
 from state import State
-from simple_dynamic_search import AStarDynamicSearch
+from search import AStarDynamicSearch
 import pygame
 import time
 
