@@ -1,4 +1,4 @@
-Total cost: 24
+Total cost: 26
 Actions:
 [
   'West',
@@ -18,11 +18,13 @@ Actions:
   'West',
   'West',
   'West',
+  'East',
+  'East',
   'West',
   'West',
+  'East',
+  'East',
   'West',
-  'West',
-  'West',
-  'West',
+  'East',
   'West',
 ]

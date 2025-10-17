@@ -1,238 +1,213 @@
 from game import Layout
-from action import Direction
+from visualize import Direction
 from state import State
-from search import AStarDynamicSearch
+from base_pacman import BasePacmanGame
 import pygame
 import time
 
-class PacmanGame:
+class PacmanGame(BasePacmanGame):
+    """Manual Pacman Game - Chế độ điều khiển thủ công"""
+    
     def __init__(self, layout):
-        # Khởi tạo game với layout đã cho.
-        self.layout = layout
+        # Gọi constructor của base class
+        super().__init__(layout, is_manual=True)
         
-        # Khởi tạo trạng thái ban đầu của Pacman.
-        # Sử dụng vị trí đầu tiên của Pacman trong layout, hướng STOP và trạng thái ban đầu của thực phẩm.
-        self.state = State(self.layout.agentPositions[0][1], Direction.STOP, self.getFoodGrid(), 0)
+        # Hướng di chuyển hiện tại
+        self.current_direction = Direction.STOP
+        self.pending_direction = None  # Hướng chờ đợi để thử lại
         
-        # Thời gian còn lại cho phép Pacman ăn bánh kỳ diệu.
-        self.power_timer = 0
-        
-        # Tổng số bánh kỳ diệu ban đầu trong layout.
-        self.total_pies = len(self.getMagicalPies())
-        
-        # Đếm số bước để xoay mê cung
-        self.step_count = 0
-        self.score = 0  # Điểm số của game
-        # Cờ game over khi Pacman đụng ma
-        self.game_over = False
-        # Danh sách các ô tường đã lên kế hoạch phá sau khi ăn magical pie
-        self.planned_walls = set()
-        # Bộ tìm kiếm
-        self.simple_dynamic_search = None
+        # Cải thiện điều khiển
+        self.move_timer = 0  # Timer để kiểm soát tốc độ di chuyển
+        self.move_delay = 2  # Số frame cần chờ giữa các lần di chuyển (càng nhỏ càng nhanh)
 
-    def getStartState(self):
-        # Trả về trạng thái ban đầu của Pacman (vị trí).
-        return self.state.getPosition()
+    def handle_input(self):
+        """Xử lý input từ bàn phím"""
+        keys = pygame.key.get_pressed()
         
-    def getFoodGrid(self):
-        # Tạo một lưới thực phẩm, đánh dấu các vị trí có thức ăn (trắng).
-        return [
-            [self.isFood((x, y)) for x in range(self.layout.width)]
-            for y in range(self.layout.height)
-        ]
+        # Xử lý phím tăng/giảm tốc độ
+        if keys[pygame.K_PLUS] or keys[pygame.K_EQUALS]:
+            if self.move_delay > 0:
+                self.move_delay -= 1
+        elif keys[pygame.K_MINUS]:
+            if self.move_delay < 10:
+                self.move_delay += 1
         
-    def isFood(self, pos):
-        # Kiểm tra xem vị trí có phải là thức ăn hay không.
-        try:
-            return self.layout.food.get_at(pos) == (255, 255, 255)
-        except (IndexError, ValueError):
-            return False
+        # Xử lý phím di chuyển
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            self.pending_direction = Direction.NORTH
+        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            self.pending_direction = Direction.SOUTH
+        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            self.pending_direction = Direction.WEST
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            self.pending_direction = Direction.EAST
+        elif keys[pygame.K_SPACE]:
+            self.pending_direction = Direction.STOP
         
-    def isWall(self, pos):
-        # Kiểm tra xem vị trí có phải là tường hay không.
-        try:
-            return self.layout.walls.get_at(pos) == (255, 255, 255)
-        except (IndexError, ValueError):
-            return True  # Nếu ra ngoài bounds, coi như là tường
+        # Xử lý teleport thủ công
+        if keys[pygame.K_t]:
+            if keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]:
+                # Teleport chéo góc
+                self.handle_diagonal_teleport()
+            elif keys[pygame.K_1]:
+                self.handle_teleport_to_corner(1)
+            elif keys[pygame.K_2]:
+                self.handle_teleport_to_corner(2)
+            elif keys[pygame.K_3]:
+                self.handle_teleport_to_corner(3)
+            elif keys[pygame.K_4]:
+                self.handle_teleport_to_corner(4)
+
+    def handle_diagonal_teleport(self):
+        """Xử lý teleport chéo góc"""
+        current_pos = self.state.getPosition()
         
-    def isMagicalPie(self, pos):
-        # Kiểm tra xem vị trí có phải là bánh kỳ diệu hay không.
-        return pos in self.getMagicalPies()
-
-    def getMagicalPies(self):
-        # Trả về danh sách các vị trí bánh kỳ diệu.
-        return self.layout.magical_pies
-
-    def getSuccessors(self, pos):
-        successors = []
-        x, y = pos
-        width, height = self.layout.width, self.layout.height
-        corners = self.layout.opposite_corners
-
-        # CHỈ cho phép teleport tại các vị trí teleport hợp lệ đã định nghĩa
-        # Kiểm tra xem có phải là vị trí teleport hợp lệ không
-        valid_teleport_positions = set(corners.keys())
-        if (x, y) in valid_teleport_positions:
-            x, y = corners[(x, y)]
-            new_pos = (x, y)
-            successors.append((new_pos, Direction.STOP, 0))
-
-        # Lấy các hướng di chuyển từ các vị trí xung quanh.
-        for direction, (dx, dy) in Direction._directions.items():
-            if direction == Direction.STOP:
-                continue
-            next_x, next_y = x + dx, y + dy
+        # Kiểm tra xem có ở góc teleport không
+        if current_pos in self.teleport_corners:
+            corner_num = self.teleport_corners[current_pos]
             
-            # Kiểm tra bounds nghiêm ngặt - phải trong phạm vi hợp lệ
-            if (0 <= next_x < width and 0 <= next_y < height):
-                # Kiểm tra có thể di chuyển không (không phải tường hoặc có power)
-                can_move = not self.isWall((next_x, next_y)) or self.power_timer > 0
-                if can_move:
-                    new_pos = (next_x, next_y)
-                    # Kiểm tra thêm: vị trí mới phải hợp lệ và không phải tường
-                    if (0 <= new_pos[0] < width and 0 <= new_pos[1] < height and 
-                        (not self.isWall(new_pos) or self.power_timer > 0)):
-                        
-                        # Chi phí đơn vị (không né ma) để tìm đường ngắn nhất
-                        cost = 1
+            # Tìm góc đối diện
+            opposite_corner = None
+            for pos, num in self.teleport_corners.items():
+                if num != corner_num:
+                    opposite_corner = pos
+                    break
+            
+            if opposite_corner:
+                # Kiểm tra xem góc đối diện có phải là góc đối diện thực sự không
+                if self.is_opposite_corner(current_pos, opposite_corner):
+                    self.state.pos = opposite_corner
 
-                        successors.append((new_pos, direction, cost))
-            # Nếu ra ngoài bounds, không thêm vào successors
+    def handle_teleport_to_corner(self, corner_num):
+        """Xử lý teleport đến góc cụ thể"""
+        current_pos = self.state.getPosition()
+        
+        # Kiểm tra xem có ở góc teleport không
+        if current_pos in self.teleport_corners:
+            # Tìm góc đích
+            target_corner = None
+            for pos, num in self.teleport_corners.items():
+                if num == corner_num:
+                    target_corner = pos
+                    break
+            
+            if target_corner and target_corner != current_pos:
+                self.state.pos = target_corner
 
-        # Thêm hành động WAIT (STOP) với chi phí cố định 1
-        successors.append(((x, y), Direction.STOP, 1))
+    def is_opposite_corner(self, pos1, pos2):
+        """Kiểm tra xem hai vị trí có phải là góc đối diện không"""
+        x1, y1 = pos1
+        x2, y2 = pos2
+        
+        # Kiểm tra xem có phải là góc đối diện thực sự không
+        # (1,1) <-> (34,16) và (34,1) <-> (1,16)
+        return ((x1 == 1 and y1 == 1 and x2 == 34 and y2 == 16) or
+                (x1 == 34 and y1 == 16 and x2 == 1 and y2 == 1) or
+                (x1 == 34 and y1 == 1 and x2 == 1 and y2 == 16) or
+                (x1 == 1 and y1 == 16 and x2 == 34 and y2 == 1))
 
-        return successors
-
-    def isGoalState(self, state):
-        # Kiểm tra xem Pacman đã ăn hết tất cả thực phẩm và ở cổng exit hay chưa.
-        pos = state.getPosition()
-        exit_gates = self.layout.exit_gates
+    def move_pacman(self):
+        """Di chuyển Pacman theo hướng hiện tại"""
+        # Tăng timer di chuyển
+        self.move_timer += 1
         
-        # Kiểm tra đã ăn hết thức ăn chưa
-        food_eaten = not any(any(row) for row in state.food_grid)
-        
-        # Kiểm tra có ở cổng exit không
-        at_exit = pos in exit_gates
-        
-        return food_eaten and at_exit
-
-    def update(self):
-        if self.power_timer > 0:
-            self.power_timer -= 1  # Giảm thời gian của bánh kỳ diệu.
-        
-        pos = self.state.getPosition()
-        
-        # Kiểm tra bounds của Pacman - đảm bảo không ra ngoài mê cung
-        if (pos[0] < 0 or pos[0] >= self.layout.width or 
-            pos[1] < 0 or pos[1] >= self.layout.height):
-            # Điều chỉnh vị trí về trong bounds
-            new_x = max(0, min(pos[0], self.layout.width - 1))
-            new_y = max(0, min(pos[1], self.layout.height - 1))
-            self.state.pos = (new_x, new_y)
-            pos = self.state.getPosition()
-        
-        # Nếu Pacman ăn thức ăn, xóa thức ăn khỏi bản đồ và tăng điểm.
-        if self.isFood(pos):
-            try:
-                self.layout.food.set_at(pos, (0, 0, 0))
-            except Exception:
-                pass
-            self.score += 10  # Tăng 10 điểm cho mỗi thức ăn
-        
-        # Nếu Pacman ăn bánh kỳ diệu, xóa nó khỏi danh sách bánh kỳ diệu và bật chế độ siêu Pacman.
-        if self.isMagicalPie(pos):
-            self.layout.magical_pies.remove(pos)
-            self.power_timer = 5  # Bật chế độ siêu Pacman trong 5 bước đi.
-            self.score += 50  # Tăng 50 điểm cho bánh kỳ diệu
-        
-        # Di chuyển tất cả ghosts
-        for ghost in self.layout.ghosts:
-            ghost.move(self.layout)
-        
-        # Kiểm tra va chạm Pacman - ma (game over)
-        for ghost in self.layout.ghosts:
-            if ghost.getPosition() == pos:
-                self.game_over = True
-                break
-
-        if self.game_over:
+        # Kiểm tra xem có thể di chuyển không
+        if self.move_timer < self.move_delay:
             return
+        
+        # Reset timer
+        self.move_timer = 0
+        
+        # Xử lý hướng chờ đợi
+        if self.pending_direction is not None:
+            self.current_direction = self.pending_direction
+            self.pending_direction = None
+        
+        # Thực hiện di chuyển
+        if self.current_direction != Direction.STOP:
+            # Lấy vector di chuyển
+            vector = Direction._directions[self.current_direction]
+            
+            # Tính vị trí mới
+            new_pos = (self.state.getPosition()[0] + vector[0], 
+                      self.state.getPosition()[1] + vector[1])
+            
+            # Kiểm tra tường
+            if not self.isWall(new_pos):
+                # Di chuyển Pacman
+                self.state = self.state.generateState(vector, self.layout.opposite_corners)
+                
+                # Cập nhật game state
+                self.update()
+                
+                # Tăng bộ đếm bước khi thực sự di chuyển
+                self.step_count += 1
+                
+                # Kiểm tra xem có cần xoay ma trận không (mỗi 30 bước)
+                if self.step_count % 30 == 0:
+                    self.rotate_maze_and_update_coordinates()
+                
+                # Lưu hành động và vị trí
+                self.actions_log.append(self.current_direction)
+                self.position_log.append(f"Step {self.step_count}: {self.current_direction} at {self.state.getPosition()}")
 
     def run(self):
-        corners = self.layout.opposite_corners
-        self._run_simple_dynamic_search()
-    
-    def _run_simple_dynamic_search(self):
-        """
-        Chạy game với hệ thống tìm kiếm động đơn giản
-        """
-        corners = self.layout.opposite_corners
+        """Chạy game với điều khiển thủ công"""
+        clock = pygame.time.Clock()
+        running = True
         
-        # Khởi tạo hệ thống tìm kiếm đơn giản
-        self.simple_dynamic_search = AStarDynamicSearch(self, corners)
-        
-        # Tạo danh sách để lưu dữ liệu vị trí
-        position_data = []
-        all_actions = []
-        total_cost = 0
-        step_count = 0
-        max_steps = 500  # Giới hạn số bước để tránh vòng lặp vô hạn
-        
-        while not self.game_over and step_count < max_steps:
-            step_count += 1
-            current_pos = self.state.getPosition()
+        while running and not self.game_over:
+            # Xử lý sự kiện
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
             
-            # Lấy hành động tiếp theo từ hệ thống tìm kiếm đơn giản
-            action = self.simple_dynamic_search.find_next_action(self.state, self.layout.ghosts)
+            # Xử lý input liên tục
+            self.handle_input()
             
-            # Thực hiện hành động
-            vector = Direction._directions[action]
-            self.state = self.state.generateState(vector, corners)
+            # Di chuyển Pacman
+            self.move_pacman()
+            
+            # Cập nhật game state
             self.update()
             
-            # Kiểm tra va chạm
-            if self.game_over:
-                current_pos = self.state.getPosition()
-                position_data.append(f"Step {step_count}: {action} at {current_pos} (GAME OVER)")
-                break
-            
-            # Lưu dữ liệu
-            current_pos = self.state.getPosition()
-            position_data.append(f"Step {step_count}: {action} at {current_pos}")
-            all_actions.append(action)
-            
             # Hiển thị màn hình
-            if not self.layout.display(current_pos, action, self.power_timer > 0, self.power_timer, max_steps):
-                break
+            current_pos = self.state.getPosition()
+            if not self.layout.display(current_pos, self.current_direction, 
+                                     self.power_timer > 0, self.power_timer, None):
+                running = False
             
             # Kiểm tra mục tiêu
             if self.isGoalState(self.state):
+                self.show_win_effect()
                 break
             
-            time.sleep(0.1)
+            # Kiểm tra game over
+            if self.game_over:
+                self.show_game_over_effect()
+                break
+            
+            clock.tick(8)  # 8 FPS để game chậm hơn và dễ chơi hơn
         
-        # Lưu dữ liệu để main.py có thể ghi file sau khi chạy
-        self.run_log = position_data
-        self.actions_log = all_actions
-        self.total_cost = len(all_actions)
+        # Lưu dữ liệu
+        self.run_log = self.position_log
+        self.total_cost = len(self.actions_log)
         self.final_position = self.state.getPosition()
-        self.final_steps = step_count
-        self.game_over_info = (step_count, self.final_position) if self.game_over else None
+        self.final_steps = self.step_count
+        self.game_over_info = (self.step_count, self.final_position) if self.game_over else None
 
-        # Giữ cửa sổ mở (an toàn khi pygame đã tắt)
-        current_pos = self.state.getPosition()
+        # Giữ cửa sổ mở
         try:
             while True:
-                if not self.layout.display(current_pos, Direction.STOP, self.power_timer > 0, self.power_timer, step_count):
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        return
+                if not self.layout.display(current_pos, Direction.STOP, 
+                                         self.power_timer > 0, self.power_timer, self.step_count):
                     break
                 pygame.time.Clock().tick(60)
         except pygame.error:
-            # Tránh lỗi 'video system not initialized' nếu pygame đã bị đóng
             pass
-
- 
-
-
-
-

@@ -1,4 +1,4 @@
-from action import Direction
+from visualize import Direction
 class State:
     def __init__(self, pos, direction, food_grid, power_steps=0):
         self.pos = pos

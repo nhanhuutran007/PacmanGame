@@ -28,16 +28,13 @@ PacmanGame/
 │       │   ├── Path.txt             # Đường đi AI
 │       │   └── Path_manual.txt      # Đường đi thủ công
 │       ├── src/                      # Mã nguồn chính
-│       │   ├── action.py            # Định nghĩa hướng di chuyển
-│       │   ├── animation.py         # Xử lý hoạt ảnh
-│       │   ├── game.py              # Quản lý layout và game state
-│       │   ├── ghost.py             # Logic ma
-│       │   ├── manual_pacman.py     # Game thủ công
-│       │   ├── movement.py          # Xử lý di chuyển
-│       │   ├── pacman.py            # Game AI
-│       │   ├── renderer.py          # Vẽ đồ họa
-│       │   ├── search.py            # Thuật toán tìm kiếm
-│       │   └── state.py              # Quản lý trạng thái
+│       │   ├── agent.py             # AI Agent - Trí tuệ nhân tạo
+│       │   ├── base_pacman.py       # Base class + Ghost class
+│       │   ├── game.py              # Layout Manager - Tạo mê cung
+│       │   ├── pacman.py            # Manual Pacman - Điều khiển thủ công
+│       │   ├── search.py            # Thuật toán tìm kiếm A*
+│       │   ├── state.py             # Quản lý trạng thái game
+│       │   └── visualize.py         # Visualization Engine - Đồ họa
 │       ├── main.py                  # Chương trình chính (AI)
 │       ├── main_manual.py           # Chương trình thủ công
 │       └── main_menu.py              # Menu lựa chọn
@@ -66,56 +63,64 @@ PacmanGame/
 
 ### 🧠 File logic game (src/)
 
-#### `game.py` - Layout Manager
-- **Chức năng:** Quản lý layout mê cung, tường, thức ăn, ma
-- **Tính năng:** Xoay ma trận 90 độ, quản lý teleport
+#### `game.py` - Layout Manager (Tạo mê cung)
+- **Chức năng:** Tạo và quản lý mê cung từ file text
+- **Tính năng:** 
+  - Đọc file mê cung từ thư mục `input/`
+  - Phân tích ký tự để tạo thành phần game
+  - Xoay ma trận 90 độ mỗi 30 bước
+  - Quản lý teleport và cổng thoát
 - **Thuộc tính:** `walls`, `food`, `ghosts`, `magical_pies`, `exit_gates`
 
-#### `manual_pacman.py` - Manual Game Controller
+#### `agent.py` - AI Agent (Trí tuệ nhân tạo)
+- **Chức năng:** Điều khiển game tự động với AI
+- **Thuật toán:** Tích hợp A* search algorithm
+- **Tính năng:**
+  - Tìm đường đi tối ưu
+  - Tránh ma thông minh
+  - Ăn thức ăn và bánh kỳ diệu
+  - Xử lý xoay ma trận động
+
+#### `pacman.py` - Manual Pacman (Điều khiển thủ công)
 - **Chức năng:** Điều khiển game thủ công
 - **Tính năng đặc biệt:**
-  - Xoay ma trận mỗi 30 bước
+  - Điều khiển bằng phím mũi tên/WASD
   - Teleport thủ công giữa các góc
   - Ăn tường khi có power (magical pie)
   - Tự động điều chỉnh kích thước cửa sổ
+  - Xoay ma trận mỗi 30 bước
 
-#### `pacman.py` - AI Game Controller
-- **Chức năng:** Điều khiển game tự động
-- **Thuật toán:** Tích hợp các thuật toán tìm kiếm
-- **Tối ưu:** Tìm đường đi ngắn nhất và hiệu quả nhất
+#### `base_pacman.py` - Base Game Logic + Ghost
+- **Chức năng:** Lớp cơ sở chung cho cả AI và Manual
+- **Tính năng:**
+  - Logic game chung (ăn thức ăn, power, game over)
+  - Xoay ma trận và cập nhật tọa độ
+  - Ghost class với AI di chuyển
+  - Teleport và ăn tường
+- **Classes:** `BasePacmanGame`, `Ghost`
 
-#### `search.py` - Search Algorithms
-- **Chức năng:** Triển khai các thuật toán tìm kiếm
-- **Thuật toán:** BFS, DFS, A*, Greedy Search
-- **Tối ưu:** Heuristic functions cho A*
-
-#### `renderer.py` - Graphics Engine
-- **Chức năng:** Vẽ đồ họa game
+#### `visualize.py` - Visualization Engine (Đồ họa)
+- **Chức năng:** Tất cả xử lý đồ họa và hiển thị
 - **Tính năng:**
   - Vẽ mê cung, Pacman, ma, thức ăn
+  - Animation system cho Pacman
+  - Movement controller với interpolation
   - Hiệu ứng thắng/thua
-  - Tự động điều chỉnh kích thước cửa sổ
+  - Tự động resize cửa sổ
   - Scale Pacman theo kích thước mê cung
+- **Classes:** `Direction`, `PacmanAnimation`, `Movement`, `GameVisualizer`
+
+#### `search.py` - A* Search Algorithm
+- **Chức năng:** Thuật toán tìm kiếm A* cho AI
+- **Tính năng:**
+  - A* search với heuristic thông minh
+  - Tìm đường đi tối ưu
+  - Tránh ma và tối ưu hóa pathfinding
+  - Xử lý teleport và rotation
 
 #### `state.py` - State Management
 - **Chức năng:** Quản lý trạng thái game
 - **Thuộc tính:** Vị trí Pacman, hướng di chuyển, thức ăn còn lại
-
-#### `action.py` - Movement Actions
-- **Chức năng:** Định nghĩa các hướng di chuyển
-- **Hướng:** NORTH, SOUTH, EAST, WEST, STOP
-
-#### `animation.py` - Animation System
-- **Chức năng:** Xử lý hoạt ảnh Pacman
-- **Tính năng:** Chuyển đổi frame, tạo hiệu ứng mượt mà
-
-#### `movement.py` - Movement Controller
-- **Chức năng:** Xử lý di chuyển và interpolation
-- **Tính năng:** Làm mượt chuyển động, xử lý teleport
-
-#### `ghost.py` - Ghost AI
-- **Chức năng:** Logic điều khiển ma
-- **AI:** Thuật toán di chuyển thông minh của ma
 
 ### 🎨 File tài nguyên
 
@@ -207,10 +212,10 @@ python main_manual.py
 ## 🔧 Tính năng kỹ thuật
 
 ### **Thuật toán AI:**
-- **BFS (Breadth-First Search):** Tìm đường ngắn nhất
-- **DFS (Depth-First Search):** Tìm kiếm sâu
-- **A* (A-Star):** Tìm kiếm tối ưu với heuristic
-- **Greedy Search:** Tìm kiếm tham lam
+- **A* (A-Star):** Thuật toán chính với heuristic thông minh
+- **Dynamic Search:** Tìm kiếm động thích ứng với môi trường
+- **Ghost Avoidance:** Tránh ma thông minh
+- **Path Optimization:** Tối ưu hóa đường đi
 
 ### **Tính năng đặc biệt:**
 - **Xoay ma trận động:** Mỗi 30 bước
@@ -219,10 +224,49 @@ python main_manual.py
 - **Tự động resize:** Cửa sổ thích ứng với kích thước mê cung
 
 ### **Tối ưu hóa:**
-- **OOP Design:** Code được tổ chức theo hướng đối tượng
-- **Clean Code:** Loại bỏ code thừa, tối ưu performance
+- **OOP Design:** Code được tổ chức theo hướng đối tượng với inheritance
+- **Code Consolidation:** Gom các file liên quan vào một file duy nhất
+- **Clean Code:** Loại bỏ tên có gạch chân, tối ưu performance
 - **Memory Management:** Quản lý bộ nhớ hiệu quả
 - **Error Handling:** Xử lý lỗi robust
+- **File Organization:** Giảm từ 10 file xuống 7 file
+
+## 🏗️ Cấu trúc file đã tối ưu
+
+### **📁 Trước khi tối ưu (10 files):**
+```
+src/
+├── action.py          # Direction class
+├── animation.py       # PacmanAnimation class  
+├── movement.py        # Movement class
+├── renderer.py        # GameRenderer class
+├── ghost.py           # Ghost class
+├── manual_pacman.py   # ManualPacmanGame class
+├── pacman.py          # PacmanGame class
+├── game.py            # Layout class
+├── search.py          # Search algorithms
+└── state.py           # State management
+```
+
+### **📁 Sau khi tối ưu (7 files):**
+```
+src/
+├── agent.py           # AI Agent (AgentGame)
+├── pacman.py          # Manual Pacman (PacmanGame)  
+├── base_pacman.py     # Base class + Ghost
+├── game.py            # Layout Manager
+├── search.py          # A* Search Algorithm
+├── state.py           # State Management
+└── visualize.py       # All visualization classes
+```
+
+### **🎯 Lợi ích của việc tối ưu:**
+- **📦 Giảm 30% số file:** Từ 10 xuống 7 files
+- **🔄 Code reuse:** Base class cho cả AI và Manual
+- **📝 Clean naming:** Loại bỏ tên có gạch chân
+- **🎨 Centralized graphics:** Tất cả visualization trong một file
+- **🧠 Clear separation:** AI vs Manual rõ ràng
+- **🛠️ Easy maintenance:** Dễ dàng maintain và debug
 
 ## 📊 Kết quả và đánh giá
 

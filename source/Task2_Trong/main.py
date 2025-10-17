@@ -7,7 +7,7 @@ SRC_DIR = os.path.join(os.path.dirname(__file__), 'src')
 sys.path.insert(0, SRC_DIR)
 
 from game import Layout
-from pacman import PacmanGame
+from agent import AgentGame
 
 
 def main(input_filename="task02_pacman_example_map.txt", output_filename="output.txt", path_filename="Path.txt"):
@@ -24,7 +24,7 @@ def main(input_filename="task02_pacman_example_map.txt", output_filename="output
     if layout is None:
         return
 
-    game = PacmanGame(layout)
+    game = AgentGame(layout)
     game.run()
 
     

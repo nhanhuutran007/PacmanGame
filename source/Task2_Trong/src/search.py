@@ -1,6 +1,6 @@
 import heapq
 from collections import deque
-from action import Direction
+from visualize import Direction
 from game import Layout
 
 
@@ -90,9 +90,26 @@ class AStarDynamicSearch:
         if not self.recent_positions or self.recent_positions[-1] != current_state.pos:
             self.recent_positions.append(current_state.pos)
 
-        # Ăn thức ăn kề nếu an toàn
+        # Ưu tiên ăn thức ăn kề nếu an toàn
         food_grid_now = self.problem.getFoodGrid()
         cx, cy = current_state.pos
+        
+        # Kiểm tra magical pie trước (ưu tiên cao hơn)
+        for direction, (dx, dy) in Direction._directions.items():
+            if direction == Direction.STOP:
+                continue
+            nx, ny = cx + dx, cy + dy
+            if (0 <= nx < len(food_grid_now[0]) and 0 <= ny < len(food_grid_now)):
+                try:
+                    # Kiểm tra magical pie
+                    if self.problem.isMagicalPie((nx, ny)):
+                        if not self.isStepDangerous((cx, cy), (nx, ny), ghosts, step=1):
+                            self.last_selected_action = direction
+                            return direction
+                except Exception:
+                    pass
+        
+        # Kiểm tra thức ăn thường
         for direction, (dx, dy) in Direction._directions.items():
             if direction == Direction.STOP:
                 continue
@@ -133,14 +150,27 @@ class AStarDynamicSearch:
             def h(pos):
                 px, py = pos
                 local_count = 0
-                radius = 2
+                radius = 3  # Tăng radius để tính toán chính xác hơn
+                
+                # Đếm thức ăn trong vùng lân cận
                 for yy in range(max(0, py - radius), min(len(food_grid), py + radius + 1)):
                     row = food_grid[yy]
                     for xx in range(max(0, px - radius), min(len(row), px + radius + 1)):
                         if row[xx]:
                             local_count += 1
+                
+                # Tính khoảng cách đến thức ăn gần nhất
+                min_distance = float('inf')
+                for fx, fy in food_targets:
+                    distance = abs(px - fx) + abs(py - fy)
+                    min_distance = min(min_distance, distance)
+                
+                # Heuristic kết hợp: ưu tiên vùng có nhiều thức ăn và gần thức ăn
                 base = len(food_targets)
-                score = base - 0.3 * local_count
+                density_bonus = 0.5 * local_count  # Thưởng cho vùng có nhiều thức ăn
+                distance_penalty = 0.3 * min_distance  # Phạt cho khoảng cách xa
+                
+                score = base - distance_penalty + density_bonus
                 return max(0, score)
 
             def is_goal(pos):

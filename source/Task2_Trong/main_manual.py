@@ -7,7 +7,7 @@ SRC_DIR = os.path.join(os.path.dirname(__file__), 'src')
 sys.path.insert(0, SRC_DIR)
 
 from game import Layout
-from manual_pacman import ManualPacmanGame
+from pacman import PacmanGame
 
 
 def main(input_filename="task02_pacman_example_map.txt", output_filename="output_manual.txt", path_filename="Path_manual.txt"):
@@ -24,7 +24,7 @@ def main(input_filename="task02_pacman_example_map.txt", output_filename="output
     if layout is None:
         return
 
-    game = ManualPacmanGame(layout)
+    game = PacmanGame(layout)
     game.run()
 
     # 1) Path.txt từ game.run_log (chuỗi Step... at (x, y))

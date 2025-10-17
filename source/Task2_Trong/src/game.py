@@ -1,10 +1,8 @@
 import pygame
 import os
 import time
-from animation import PacmanAnimation
-from movement import Movement
-from renderer import GameRenderer
-from ghost import Ghost
+from visualize import GameVisualizer, PacmanAnimation, Movement, Direction
+from base_pacman import Ghost
 
 class Layout:
     def __init__(self, layoutData):
@@ -31,7 +29,7 @@ class Layout:
         # Khởi tạo các đối tượng animation, movement và renderer.
         self.animation = PacmanAnimation()
         self.movement = Movement()
-        self.renderer = GameRenderer(self.width, self.height)
+        self.renderer = GameVisualizer(self.width, self.height)
         
         # Tạo bề mặt cho các đối tượng trong game (tường, thức ăn, v.v.).
         self.walls = pygame.Surface((self.width, self.height))
