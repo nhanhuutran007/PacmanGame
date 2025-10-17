@@ -42,6 +42,14 @@ class ManualPacmanGame:
         
         # Lưu trữ các tường đã ăn
         self.eaten_walls = []
+        
+        # Lưu trữ các góc teleport ban đầu
+        self.teleport_corners = {
+            (1, 1): 1,      # Góc trái trên
+            (34, 1): 2,     # Góc phải trên  
+            (1, 16): 3,     # Góc trái dưới
+            (34, 16): 4     # Góc phải dưới
+        }
 
     def getStartState(self):
         return self.state.getPosition()
@@ -87,6 +95,103 @@ class ManualPacmanGame:
         at_exit = pos in exit_gates
         
         return food_eaten and at_exit
+
+    def rotate_maze_and_update_coordinates(self):
+        """Xoay ma trận 90 độ và cập nhật tọa độ thức ăn, magical_pies"""
+        print(f"Xoay ma tran sau {self.step_count} buoc...")
+        
+        # Lưu kích thước cũ trước khi xoay
+        old_width = self.layout.width
+        old_height = self.layout.height
+        
+        # Lưu trữ tọa độ hiện tại của thức ăn và magical_pies
+        current_food_positions = []
+        current_magical_pie_positions = list(self.layout.magical_pies)
+        
+        # Thu thập tất cả vị trí thức ăn hiện tại
+        for y in range(old_height):
+            for x in range(old_width):
+                if self.isFood((x, y)):
+                    current_food_positions.append((x, y))
+        
+        # Xoay ma trận layout
+        self.layout.rotate_maze_simple()
+        
+        # Cập nhật tọa độ thức ăn sau khi xoay
+        self.update_food_coordinates_after_rotation(current_food_positions, old_width, old_height)
+        
+        # Cập nhật tọa độ magical_pies sau khi xoay
+        self.update_magical_pie_coordinates_after_rotation(current_magical_pie_positions, old_width, old_height)
+        
+        # Cập nhật vị trí Pacman sau khi xoay
+        self.update_pacman_position_after_rotation(old_width, old_height)
+        
+        # Cập nhật các góc teleport sau khi xoay
+        self.update_teleport_corners_after_rotation(old_width, old_height)
+        
+        print(f"Da xoay ma tran va cap nhat toa do. Thuc an: {len(current_food_positions)}, Magical pies: {len(current_magical_pie_positions)}")
+
+    def update_food_coordinates_after_rotation(self, old_food_positions, old_width, old_height):
+        """Cập nhật tọa độ thức ăn sau khi xoay ma trận 90 độ"""
+        # Xóa tất cả thức ăn cũ
+        self.layout.food.fill((0, 0, 0))
+        
+        # Thêm thức ăn mới với tọa độ đã xoay
+        for x, y in old_food_positions:
+            # Xoay tọa độ 90 độ theo chiều kim đồng hồ
+            new_x = old_height - 1 - y
+            new_y = x
+            
+            # Đảm bảo tọa độ mới trong bounds của ma trận mới
+            if 0 <= new_x < self.layout.width and 0 <= new_y < self.layout.height:
+                self.layout.food.set_at((new_x, new_y), (255, 255, 255))
+
+    def update_magical_pie_coordinates_after_rotation(self, old_magical_pie_positions, old_width, old_height):
+        """Cập nhật tọa độ magical_pies sau khi xoay ma trận 90 độ"""
+        new_magical_pies = []
+        
+        for x, y in old_magical_pie_positions:
+            # Xoay tọa độ 90 độ theo chiều kim đồng hồ
+            new_x = old_height - 1 - y
+            new_y = x
+            
+            # Đảm bảo tọa độ mới trong bounds của ma trận mới
+            if 0 <= new_x < self.layout.width and 0 <= new_y < self.layout.height:
+                new_magical_pies.append((new_x, new_y))
+        
+        # Cập nhật danh sách magical_pies
+        self.layout.magical_pies = new_magical_pies
+
+    def update_pacman_position_after_rotation(self, old_width, old_height):
+        """Cập nhật vị trí Pacman sau khi xoay ma trận 90 độ"""
+        old_pos = self.state.getPosition()
+        old_x, old_y = old_pos
+        
+        # Xoay tọa độ 90 độ theo chiều kim đồng hồ
+        new_x = old_height - 1 - old_y
+        new_y = old_x
+        
+        # Đảm bảo tọa độ mới trong bounds của ma trận mới
+        if 0 <= new_x < self.layout.width and 0 <= new_y < self.layout.height:
+            self.state.pos = (new_x, new_y)
+            print(f"Pacman di chuyen tu ({old_x}, {old_y}) den ({new_x}, {new_y})")
+
+    def update_teleport_corners_after_rotation(self, old_width, old_height):
+        """Cập nhật các góc teleport sau khi xoay ma trận 90 độ"""
+        new_teleport_corners = {}
+        
+        for (x, y), corner_num in self.teleport_corners.items():
+            # Xoay tọa độ 90 độ theo chiều kim đồng hồ
+            new_x = old_height - 1 - y
+            new_y = x
+            
+            # Đảm bảo tọa độ mới trong bounds của ma trận mới
+            if 0 <= new_x < self.layout.width and 0 <= new_y < self.layout.height:
+                new_teleport_corners[(new_x, new_y)] = corner_num
+        
+        # Cập nhật các góc teleport
+        self.teleport_corners = new_teleport_corners
+        print(f"Cap nhat teleport corners: {self.teleport_corners}")
 
     def update(self):
         # Không giảm power_timer ở đây nữa - sẽ giảm trong move_pacman()
@@ -176,13 +281,8 @@ class ManualPacmanGame:
         """Xử lý input teleport thủ công với logic mới"""
         current_pos = self.state.getPosition()
         
-        # Định nghĩa 4 góc và mapping
-        corners = {
-            (1, 1): 1,      # Góc trái trên
-            (34, 1): 2,     # Góc phải trên  
-            (1, 16): 3,     # Góc trái dưới
-            (34, 16): 4     # Góc phải dưới
-        }
+        # Sử dụng teleport_corners đã được cập nhật sau khi xoay
+        corners = self.teleport_corners
         
         # Chỉ xử lý teleport nếu ở vị trí teleport hợp lệ
         if current_pos not in corners:
@@ -190,36 +290,43 @@ class ManualPacmanGame:
         
         current_corner = corners[current_pos]
         
+        # Tìm vị trí của các góc đối diện
+        corner_positions = {v: k for k, v in corners.items()}
+        
         # Shift + T: Dịch chuyển chéo góc
         if keys[pygame.K_LSHIFT] and keys[pygame.K_t]:
-            if current_corner == 1:  # (1,1) -> (34,16)
-                self.state.pos = (34, 16)
-            elif current_corner == 4:  # (34,16) -> (1,1)
-                self.state.pos = (1, 1)
-            elif current_corner == 2:  # (34,1) -> (1,16)
-                self.state.pos = (1, 16)
-            elif current_corner == 3:  # (1,16) -> (34,1)
-                self.state.pos = (34, 1)
+            if current_corner == 1:  # Góc 1 -> Góc 4
+                if 4 in corner_positions:
+                    self.state.pos = corner_positions[4]
+            elif current_corner == 4:  # Góc 4 -> Góc 1
+                if 1 in corner_positions:
+                    self.state.pos = corner_positions[1]
+            elif current_corner == 2:  # Góc 2 -> Góc 3
+                if 3 in corner_positions:
+                    self.state.pos = corner_positions[3]
+            elif current_corner == 3:  # Góc 3 -> Góc 2
+                if 2 in corner_positions:
+                    self.state.pos = corner_positions[2]
         
-        # T + 1: Dịch chuyển đến góc 1 (1,1)
+        # T + 1: Dịch chuyển đến góc 1
         elif keys[pygame.K_t] and keys[pygame.K_1]:
-            if current_corner != 1:  # Không dịch chuyển nếu đã ở góc 1
-                self.state.pos = (1, 1)
+            if current_corner != 1 and 1 in corner_positions:  # Không dịch chuyển nếu đã ở góc 1
+                self.state.pos = corner_positions[1]
         
-        # T + 2: Dịch chuyển đến góc 2 (34,1)
+        # T + 2: Dịch chuyển đến góc 2
         elif keys[pygame.K_t] and keys[pygame.K_2]:
-            if current_corner != 2:  # Không dịch chuyển nếu đã ở góc 2
-                self.state.pos = (34, 1)
+            if current_corner != 2 and 2 in corner_positions:  # Không dịch chuyển nếu đã ở góc 2
+                self.state.pos = corner_positions[2]
         
-        # T + 3: Dịch chuyển đến góc 3 (1,16)
+        # T + 3: Dịch chuyển đến góc 3
         elif keys[pygame.K_t] and keys[pygame.K_3]:
-            if current_corner != 3:  # Không dịch chuyển nếu đã ở góc 3
-                self.state.pos = (1, 16)
+            if current_corner != 3 and 3 in corner_positions:  # Không dịch chuyển nếu đã ở góc 3
+                self.state.pos = corner_positions[3]
         
-        # T + 4: Dịch chuyển đến góc 4 (34,16)
+        # T + 4: Dịch chuyển đến góc 4
         elif keys[pygame.K_t] and keys[pygame.K_4]:
-            if current_corner != 4:  # Không dịch chuyển nếu đã ở góc 4
-                self.state.pos = (34, 16)
+            if current_corner != 4 and 4 in corner_positions:  # Không dịch chuyển nếu đã ở góc 4
+                self.state.pos = corner_positions[4]
 
     def can_move(self, direction):
         """Kiểm tra xem có thể di chuyển theo hướng đã cho không"""
@@ -295,11 +402,16 @@ class ManualPacmanGame:
         if self.power_timer > 0:
             self.power_timer -= 1
         
+        # Tăng bộ đếm bước khi thực sự di chuyển
+        self.step_count += 1
+        
+        # Kiểm tra xem có cần xoay ma trận không (mỗi 30 bước)
+        if self.step_count % 30 == 0:
+            self.rotate_maze_and_update_coordinates()
+        
         # Lưu hành động và vị trí
         self.actions_log.append(self.current_direction)
-        self.position_log.append(f"Step {self.step_count + 1}: {self.current_direction} at {self.state.getPosition()}")
-        
-        self.step_count += 1
+        self.position_log.append(f"Step {self.step_count}: {self.current_direction} at {self.state.getPosition()}")
 
     def eat_wall_at_position(self, pos):
         """Ăn tường tại vị trí hiện tại khi có power"""

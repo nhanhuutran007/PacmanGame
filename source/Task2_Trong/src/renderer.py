@@ -6,7 +6,7 @@ class GameRenderer:
         self.width = width
         self.height = height
         self.cell_size = cell_size
-        self.info_bar_height = 60  # Chiều cao thanh thông tin
+        self.info_bar_height = 40  # Chiều cao thanh thông tin
         # Tải ảnh ghost
         try:
             import os
@@ -20,13 +20,56 @@ class GameRenderer:
         # Khởi tạo cửa sổ game với kích thước phù hợp + thanh thông tin
         self.screen = pygame.display.set_mode((width * cell_size, height * cell_size + self.info_bar_height))
         pygame.display.set_caption("Pacman Game")
+        
+        # Đặt cửa sổ ở giữa màn hình
+        self.center_window()
+    
+    def center_window(self):
+        """Đặt cửa sổ ở giữa màn hình"""
+        import os
+        # Lấy kích thước màn hình
+        screen_info = pygame.display.Info()
+        screen_width = screen_info.current_w
+        screen_height = screen_info.current_h
+        
+        # Tính toán vị trí để đặt cửa sổ ở giữa
+        window_width = self.width * self.cell_size
+        window_height = self.height * self.cell_size + self.info_bar_height
+        
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        
+        # Đặt vị trí cửa sổ (chỉ hoạt động trên một số hệ điều hành)
+        try:
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f'{x},{y}'
+        except:
+            pass
     
     def resize_window(self, new_width: int, new_height: int):
         """Thay đổi kích thước cửa sổ khi xoay mê cung"""
         self.width = new_width
         self.height = new_height
+        
+        # Tự động điều chỉnh cell_size dựa trên tỷ lệ
+        # Nếu chiều cao > chiều rộng (dọc), giảm cell_size để vừa màn hình
+        if new_height > new_width:
+            self.cell_size = 18  # Kích thước cho màn hình dọc
+        else:
+            self.cell_size = 30  # Kích thước bình thường cho màn hình ngang
+        
+        # Cập nhật kích thước ảnh ghost
+        if self.ghost_image:
+            import os
+            self.ghost_image = pygame.transform.scale(
+                pygame.image.load(os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "Ghost_image", "unnamed.png"))),
+                (self.cell_size - 6, self.cell_size - 6)
+            )
+        
         self.screen = pygame.display.set_mode((new_width * self.cell_size, new_height * self.cell_size + self.info_bar_height))
-        print(f"Window resized to: {new_width}x{new_height}")
+        print(f"Window resized to: {new_width}x{new_height} (cell_size: {self.cell_size})")
+        
+        # Đặt lại cửa sổ ở giữa màn hình sau khi resize
+        self.center_window()
 
     def clear_screen(self):
         # Vẽ background cho mê cung
@@ -84,15 +127,20 @@ class GameRenderer:
 
     def draw_pacman(self, pos, image, powered):
         x, y = pos
-        screen_x = x * self.cell_size + (self.cell_size - image.get_width()) // 2
-        screen_y = y * self.cell_size + (self.cell_size - image.get_height()) // 2 + self.info_bar_height
+        
+        # Scale Pacman theo cell_size hiện tại
+        pacman_size = int(self.cell_size * 0.8)  # 80% của cell_size
+        scaled_image = pygame.transform.scale(image, (pacman_size, pacman_size))
+        
+        screen_x = x * self.cell_size + (self.cell_size - scaled_image.get_width()) // 2
+        screen_y = y * self.cell_size + (self.cell_size - scaled_image.get_height()) // 2 + self.info_bar_height
         
         # Vẽ vòng tròn trắng xung quanh Pacman nếu ở chế độ powered.
         if powered:
-            self.draw_cell((x, y), (255, 255, 255), radius=15, border=2)
+            self.draw_cell((x, y), (255, 255, 255), radius=int(self.cell_size * 0.5), border=2)
         
-        # Vẽ hình ảnh Pacman tại vị trí đã tính toán.
-        self.screen.blit(image, (screen_x, screen_y))
+        # Vẽ hình ảnh Pacman đã scale tại vị trí đã tính toán.
+        self.screen.blit(scaled_image, (screen_x, screen_y))
     
     def draw_step_counter(self, step_count, total_steps):
         """Hiển thị số bước ở giữa thanh thông tin"""
