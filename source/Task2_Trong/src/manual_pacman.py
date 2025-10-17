@@ -98,7 +98,6 @@ class ManualPacmanGame:
 
     def rotate_maze_and_update_coordinates(self):
         """Xoay ma trận 90 độ và cập nhật tọa độ thức ăn, magical_pies"""
-        print(f"Xoay ma tran sau {self.step_count} buoc...")
         
         # Lưu kích thước cũ trước khi xoay
         old_width = self.layout.width
@@ -129,7 +128,6 @@ class ManualPacmanGame:
         # Cập nhật các góc teleport sau khi xoay
         self.update_teleport_corners_after_rotation(old_width, old_height)
         
-        print(f"Da xoay ma tran va cap nhat toa do. Thuc an: {len(current_food_positions)}, Magical pies: {len(current_magical_pie_positions)}")
 
     def update_food_coordinates_after_rotation(self, old_food_positions, old_width, old_height):
         """Cập nhật tọa độ thức ăn sau khi xoay ma trận 90 độ"""
@@ -174,7 +172,6 @@ class ManualPacmanGame:
         # Đảm bảo tọa độ mới trong bounds của ma trận mới
         if 0 <= new_x < self.layout.width and 0 <= new_y < self.layout.height:
             self.state.pos = (new_x, new_y)
-            print(f"Pacman di chuyen tu ({old_x}, {old_y}) den ({new_x}, {new_y})")
 
     def update_teleport_corners_after_rotation(self, old_width, old_height):
         """Cập nhật các góc teleport sau khi xoay ma trận 90 độ"""
@@ -191,7 +188,6 @@ class ManualPacmanGame:
         
         # Cập nhật các góc teleport
         self.teleport_corners = new_teleport_corners
-        print(f"Cap nhat teleport corners: {self.teleport_corners}")
 
     def update(self):
         # Không giảm power_timer ở đây nữa - sẽ giảm trong move_pacman()
@@ -431,174 +427,24 @@ class ManualPacmanGame:
             except (IndexError, ValueError):
                 pass  # Bỏ qua nếu có lỗi
 
-    def get_speed_description(self):
-        """Trả về mô tả tốc độ hiện tại"""
-        if self.move_delay == 0:
-            return "Cuc nhanh (delay=0)"
-        elif self.move_delay == 1:
-            return "Nhanh (delay=1)"
-        elif self.move_delay == 2:
-            return "Trung binh (delay=2)"
-        elif self.move_delay == 3:
-            return "Cham (delay=3)"
-        elif self.move_delay == 4:
-            return "Rat cham (delay=4)"
-        else:
-            return f"Rat rat cham (delay={self.move_delay})"
 
     def show_win_effect(self):
         """Hiệu ứng thắng cuộc"""
-        print("\n" + "="*60)
-        print("*** CHUC MUNG! BAN DA HOAN THANH GAME! ***")
-        print("="*60)
-        print(f"DIEM SO: {self.score}")
-        print(f"SO BUOC: {self.step_count}")
-        print(f"THUC AN DA AN: {self.calculate_food_eaten()}")
-        print(f"BANH KY DIEU DA AN: {self.calculate_pies_eaten()}")
-        print("="*60)
-        print("*** CAM ON BAN DA CHOI! ***")
-        print("="*60)
-        
-        # Hiệu ứng đóng game với delay
-        self.close_game_with_effect("WIN")
+        self.layout.renderer.draw_win_message()
+        pygame.display.flip()
+        time.sleep(2)
 
     def show_game_over_effect(self):
         """Hiệu ứng thua cuộc"""
-        print("\n" + "="*60)
-        print("*** GAME OVER! PACMAN DA BI MA BAT! ***")
-        print("="*60)
-        print(f"DIEM SO: {self.score}")
-        print(f"SO BUOC: {self.step_count}")
-        print(f"THUC AN DA AN: {self.calculate_food_eaten()}")
-        print(f"BANH KY DIEU DA AN: {self.calculate_pies_eaten()}")
-        print("="*60)
-        print("*** CHUC BAN MAY MAN LAN SAU! ***")
-        print("="*60)
-        
-        # Hiệu ứng đóng game với delay
-        self.close_game_with_effect("GAME_OVER")
-
-    def calculate_food_eaten(self):
-        """Tính số thức ăn đã ăn"""
-        total_food = 0
-        remaining_food = 0
-        
-        # Đếm tổng số thức ăn ban đầu
-        for y in range(self.layout.height):
-            for x in range(self.layout.width):
-                if (y < len(self.layout.layoutData) and 
-                    x < len(self.layout.layoutData[y]) and 
-                    self.layout.layoutData[y][x] == '.'):
-                    total_food += 1
-        
-        # Đếm thức ăn còn lại
-        for y in range(self.layout.height):
-            for x in range(self.layout.width):
-                try:
-                    if (0 <= x < self.layout.food.get_width() and 
-                        0 <= y < self.layout.food.get_height() and 
-                        self.layout.food.get_at((x, y)) == (255, 255, 255)):
-                        remaining_food += 1
-                except (IndexError, ValueError):
-                    continue
-        
-        return total_food - remaining_food
-
-    def calculate_pies_eaten(self):
-        """Tính số bánh kỳ diệu đã ăn"""
-        total_pies = 0
-        for y in range(self.layout.height):
-            for x in range(self.layout.width):
-                if (y < len(self.layout.layoutData) and 
-                    x < len(self.layout.layoutData[y]) and 
-                    self.layout.layoutData[y][x] == 'o'):
-                    total_pies += 1
-        
-        return total_pies - len(self.layout.magical_pies)
-
-    def close_game_with_effect(self, effect_type):
-        """Đóng game với hiệu ứng"""
-        import time
-        
-        # Hiệu ứng nhấp nháy màn hình
-        for i in range(3):
-            try:
-                current_pos = self.state.getPosition()
-                if effect_type == "WIN":
-                    # Hiệu ứng thắng: màu xanh lá
-                    self.layout.renderer.clear_screen()
-                    self.layout.renderer.draw_walls(self.layout.walls, True)
-                    self.layout.renderer.draw_food(self.layout.food)
-                    self.layout.renderer.draw_magical_pies(self.layout.magical_pies)
-                    self.layout.renderer.draw_ghosts(self.layout.ghosts)
-                    self.layout.renderer.draw_exit_gates(self.layout.exit_gates)
-                    # Tạo một Surface đơn giản cho Pacman
-                    pacman_surface = pygame.Surface((20, 20))
-                    pacman_surface.fill((255, 255, 0))
-                    self.layout.renderer.draw_pacman(current_pos, pacman_surface, True)
-                    self.layout.renderer.draw_win_message()
-                else:
-                    # Hiệu ứng thua: màu đỏ
-                    self.layout.renderer.clear_screen()
-                    self.layout.renderer.draw_walls(self.layout.walls, False)
-                    self.layout.renderer.draw_food(self.layout.food)
-                    self.layout.renderer.draw_magical_pies(self.layout.magical_pies)
-                    self.layout.renderer.draw_ghosts(self.layout.ghosts)
-                    self.layout.renderer.draw_exit_gates(self.layout.exit_gates)
-                    # Tạo một Surface đơn giản cho Pacman
-                    pacman_surface = pygame.Surface((20, 20))
-                    pacman_surface.fill((255, 255, 0))
-                    self.layout.renderer.draw_pacman(current_pos, pacman_surface, False)
-                    self.layout.renderer.draw_game_over_message()
-                
-                self.layout.renderer.update_display()
-                time.sleep(0.5)
-                
-                # Màn hình tối
-                self.layout.renderer.clear_screen()
-                self.layout.renderer.update_display()
-                time.sleep(0.3)
-                
-            except pygame.error:
-                break
-        
-        # Đóng game
-        pygame.quit()
+        self.layout.renderer.draw_game_over_message()
+        pygame.display.flip()
+        time.sleep(2)
 
     def run(self):
         """Chạy game với điều khiển thủ công"""
         clock = pygame.time.Clock()
         running = True
         
-        print("=== CHE DO DIEU KHIEN THU CONG ===")
-        print("Su dung phim mui ten hoac WASD de di chuyen")
-        print("Phim SPACE de dung")
-        print("Phim ESC de thoat")
-        print("")
-        print("DIEU KHIEN CAI TIEN:")
-        print("- Di chuyen lien tuc: Giu phim de di chuyen")
-        print("- Re nhanh: Nhan phim huong truoc khi den nga re")
-        print("- + / -: Tang/giam toc do di chuyen (mac dinh: vua phai)")
-        print("- Toc do mac dinh da duoc dieu chinh de can bang hon")
-        print("")
-        print("TINH NANG DAC BIET:")
-        print("- An banh ky dieu (o): Co the an tuong trong 5 buoc")
-        print("- Di qua tuong: Tuong se bien mat va co them 5 diem")
-        print("- Chi hoat dong khi co power (5 buoc sau khi an banh ky dieu)")
-        print("")
-        print("TELEPORT THU CONG:")
-        print("- Shift + T: Dich chuyen cheo goc")
-        print("  + (1,1) <-> (34,16)")
-        print("  + (34,1) <-> (1,16)")
-        print("- T + 1: Dich chuyen den goc 1 (1,1)")
-        print("- T + 2: Dich chuyen den goc 2 (34,1)")
-        print("- T + 3: Dich chuyen den goc 3 (1,16)")
-        print("- T + 4: Dich chuyen den goc 4 (34,16)")
-        print("- Chi hoat dong tai cac goc teleport")
-        print("- Khong dich chuyen neu dang o goc dich")
-        print("")
-        print("Muc tieu: An het thuc an va den cong exit (mau xanh)")
-        print("=" * 50)
         
         while running and not self.game_over:
             # Xử lý sự kiện
