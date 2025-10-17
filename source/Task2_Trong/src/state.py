@@ -14,8 +14,10 @@ class State:
 
     def generateState(self, vector, opposite_corners):
         x, y = self.pos
-        # Xử lý teleport trước khi áp dụng vector
-        if (x, y) in opposite_corners:
+        
+        # CHỈ xử lý teleport nếu opposite_corners không rỗng
+        # và vị trí hiện tại là vị trí teleport hợp lệ
+        if opposite_corners and (x, y) in opposite_corners:
             x, y = opposite_corners[(x, y)]
             
         dx, dy = vector
@@ -23,9 +25,10 @@ class State:
         if direction == Direction.STOP:
             direction = self.direction
         
-        # Tính vị trí mới và kiểm tra giới hạn
+        # Tính vị trí mới
         new_x, new_y = x + dx, y + dy
         new_pos = (new_x, new_y)
+        
         return State(new_pos, direction, self.food_grid, self.power_steps)
 
     def __lt__(self, other):

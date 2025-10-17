@@ -166,5 +166,65 @@ class GameRenderer:
         # Vẽ text
         self.screen.blit(text_surface, text_rect)
 
+    def draw_win_message(self):
+        """Vẽ thông báo thắng cuộc"""
+        font_large = pygame.font.Font(None, 72)
+        font_medium = pygame.font.Font(None, 48)
+        
+        # Tính toán vị trí giữa màn hình
+        center_x = (self.width * self.cell_size) // 2
+        center_y = (self.height * self.cell_size + self.info_bar_height) // 2
+        
+        # Vẽ background đen mờ
+        overlay = pygame.Surface((self.width * self.cell_size, self.height * self.cell_size + self.info_bar_height))
+        overlay.set_alpha(128)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Vẽ thông báo thắng
+        win_text = "YOU WIN!"
+        win_surface = font_large.render(win_text, True, (0, 255, 0))
+        win_rect = win_surface.get_rect(center=(center_x, center_y - 30))
+        
+        # Vẽ background xanh lá cho thông báo
+        pygame.draw.rect(self.screen, (0, 100, 0), win_rect.inflate(40, 20))
+        self.screen.blit(win_surface, win_rect)
+        
+        # Vẽ thông báo phụ
+        congrats_text = "Congratulations!"
+        congrats_surface = font_medium.render(congrats_text, True, (255, 255, 255))
+        congrats_rect = congrats_surface.get_rect(center=(center_x, center_y + 20))
+        self.screen.blit(congrats_surface, congrats_rect)
+
+    def draw_game_over_message(self):
+        """Vẽ thông báo thua cuộc"""
+        font_large = pygame.font.Font(None, 72)
+        font_medium = pygame.font.Font(None, 48)
+        
+        # Tính toán vị trí giữa màn hình
+        center_x = (self.width * self.cell_size) // 2
+        center_y = (self.height * self.cell_size + self.info_bar_height) // 2
+        
+        # Vẽ background đen mờ
+        overlay = pygame.Surface((self.width * self.cell_size, self.height * self.cell_size + self.info_bar_height))
+        overlay.set_alpha(128)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Vẽ thông báo thua
+        game_over_text = "GAME OVER!"
+        game_over_surface = font_large.render(game_over_text, True, (255, 0, 0))
+        game_over_rect = game_over_surface.get_rect(center=(center_x, center_y - 30))
+        
+        # Vẽ background đỏ cho thông báo
+        pygame.draw.rect(self.screen, (100, 0, 0), game_over_rect.inflate(40, 20))
+        self.screen.blit(game_over_surface, game_over_rect)
+        
+        # Vẽ thông báo phụ
+        try_again_text = "Try Again!"
+        try_again_surface = font_medium.render(try_again_text, True, (255, 255, 255))
+        try_again_rect = try_again_surface.get_rect(center=(center_x, center_y + 20))
+        self.screen.blit(try_again_surface, try_again_rect)
+
     def update_display(self):
         pygame.display.flip()

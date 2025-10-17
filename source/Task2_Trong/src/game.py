@@ -19,11 +19,13 @@ class Layout:
         self.height = len(layoutData)  # Chiều cao của layout (số hàng).
         
         # Khởi tạo các điểm cổng dịch chuyển (opposite corners).
+        # Dịch chuyển chéo góc: (1,1) ↔ (34,16)
+        # Dịch chuyển dọc: (1,1) ↔ (1,16) và (34,1) ↔ (34,16)
         self.opposite_corners = {
-            (1, 1): (self.width - 2, self.height - 2),
-            (self.width - 2, self.height - 2): (1, 1),
-            (1, self.height - 2): (self.width - 2, 1),
-            (self.width - 2, 1): (1, self.height - 2)
+            (1, 1): (self.width - 2, self.height - 3),  # (1,1) -> (34,16)
+            (self.width - 2, self.height - 3): (1, 1),   # (34,16) -> (1,1)
+            (1, self.height - 3): (1, 1),                # (1,16) -> (1,1)
+            (self.width - 2, 1): (self.width - 2, self.height - 3)  # (34,1) -> (34,16)
         }
         
         # Khởi tạo các đối tượng animation, movement và renderer.
@@ -126,10 +128,10 @@ class Layout:
         
         # Cập nhật cổng dịch chuyển
         self.opposite_corners = {
-            (1, 1): (self.width - 2, self.height - 2),
-            (self.width - 2, self.height - 2): (1, 1),
-            (1, self.height - 2): (self.width - 2, 1),
-            (self.width - 2, 1): (1, self.height - 2)
+            (1, 1): (self.width - 2, self.height - 3),  # (1,1) -> (34,16)
+            (self.width - 2, self.height - 3): (1, 1),   # (34,16) -> (1,1)
+            (1, self.height - 3): (1, 1),                # (1,16) -> (1,1)
+            (self.width - 2, 1): (self.width - 2, self.height - 3)  # (34,1) -> (34,16)
         }
         
         # Cập nhật renderer và thay đổi kích thước cửa sổ
@@ -178,7 +180,9 @@ class Layout:
         self.prev_pacman_pos = pacman_pos  # Lưu lại vị trí Pacman trước đó.
 
         # Cập nhật vị trí di chuyển của Pacman.
-        self.movement.update_position(pacman_pos, self.opposite_corners)
+        # Trong chế độ thủ công, không cho phép teleport tự động
+        allow_auto_teleport = not hasattr(self, 'manual_mode') or not self.manual_mode
+        self.movement.update_position(pacman_pos, self.opposite_corners, allow_auto_teleport)
         interpolated_pos = self.movement.get_interpolated_position()  # Tính toán vị trí nội suy.
 
         # Lấy khung hình hiện tại từ animation.
@@ -264,17 +268,29 @@ def tryToLoad(fullname):
     """
     # Kiểm tra đường dẫn tuyệt đối trước
     if os.path.exists(fullname):
-        with open(fullname) as f:
-            lines = [line.rstrip('\n\r') for line in f]
-        return Layout(lines)
+        try:
+            with open(fullname, 'r', encoding='utf-8') as f:
+                lines = [line.rstrip('\n\r') for line in f]
+            return Layout(lines)
+        except UnicodeDecodeError:
+            # Thử với encoding khác nếu UTF-8 không hoạt động
+            with open(fullname, 'r', encoding='cp1252') as f:
+                lines = [line.rstrip('\n\r') for line in f]
+            return Layout(lines)
     
     # Nếu không tìm thấy, thử tìm trong thư mục hiện tại
     current_dir = os.path.dirname(os.path.abspath(__file__))
     full_path = os.path.join(current_dir, fullname)
     
     if os.path.exists(full_path):
-        with open(full_path) as f:
-            lines = [line.rstrip('\n\r') for line in f]
-        return Layout(lines)
+        try:
+            with open(full_path, 'r', encoding='utf-8') as f:
+                lines = [line.rstrip('\n\r') for line in f]
+            return Layout(lines)
+        except UnicodeDecodeError:
+            # Thử với encoding khác nếu UTF-8 không hoạt động
+            with open(full_path, 'r', encoding='cp1252') as f:
+                lines = [line.rstrip('\n\r') for line in f]
+            return Layout(lines)
     
     return None

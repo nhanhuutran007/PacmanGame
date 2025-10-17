@@ -69,8 +69,10 @@ class PacmanGame:
         width, height = self.layout.width, self.layout.height
         corners = self.layout.opposite_corners
 
-        # Nếu vị trí hiện tại là cổng dịch chuyển, chuyển đến vị trí đối diện.
-        if (x, y) in corners:
+        # CHỈ cho phép teleport tại các vị trí teleport hợp lệ đã định nghĩa
+        # Kiểm tra xem có phải là vị trí teleport hợp lệ không
+        valid_teleport_positions = set(corners.keys())
+        if (x, y) in valid_teleport_positions:
             x, y = corners[(x, y)]
             new_pos = (x, y)
             successors.append((new_pos, Direction.STOP, 0))

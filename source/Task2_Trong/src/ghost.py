@@ -4,9 +4,16 @@ class Ghost:
     def __init__(self, pos, direction=Direction.EAST):
         self.pos = pos
         self.direction = direction  # Ghost chỉ di chuyển ngang (EAST hoặc WEST)
+        self.move_timer = 0  # Timer để kiểm soát tốc độ di chuyển
+        self.move_delay = 2  # Số frame cần chờ giữa các lần di chuyển (càng lớn càng chậm)
         
     def move(self, layout):
         """Di chuyển ghost theo hướng hiện tại, đổi hướng khi gặp tường"""
+        # Kiểm soát tốc độ di chuyển
+        self.move_timer += 1
+        if self.move_timer < self.move_delay:
+            return  # Chưa đến lúc di chuyển
+        
         x, y = self.pos
         dx, dy = Direction._directions[self.direction]
         new_x, new_y = x + dx, y + dy
@@ -19,15 +26,19 @@ class Ghost:
                 is_wall = layout.walls.get_at((new_x, new_y)) == (255, 255, 255)
                 if not is_wall:
                     self.pos = (new_x, new_y)
+                    self.move_timer = 0  # Reset timer sau khi di chuyển
                 else:
                     # Đổi hướng khi gặp tường
                     self._reverse_direction()
+                    self.move_timer = 0  # Reset timer sau khi đổi hướng
             except (IndexError, ValueError):
                 # Nếu có lỗi truy cập pixel, đổi hướng
                 self._reverse_direction()
+                self.move_timer = 0  # Reset timer sau khi đổi hướng
         else:
             # Nếu ra ngoài bounds, đổi hướng
             self._reverse_direction()
+            self.move_timer = 0  # Reset timer sau khi đổi hướng
             
     def _reverse_direction(self):
         """Đổi hướng di chuyển"""
