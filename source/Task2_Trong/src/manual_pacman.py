@@ -465,7 +465,7 @@ class ManualPacmanGame:
         print("")
         print("DIEU KHIEN CAI TIEN:")
         print("- Di chuyen lien tuc: Giu phim de di chuyen")
-        print("- Rẽ nhanh: Nhan phim huong truoc khi den ngã rẽ")
+        print("- Re nhanh: Nhan phim huong truoc khi den nga re")
         print("- + / -: Tang/giam toc do di chuyen (mac dinh: vua phai)")
         print("- Toc do mac dinh da duoc dieu chinh de can bang hon")
         print("")
