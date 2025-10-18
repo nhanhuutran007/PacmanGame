@@ -1,326 +1,189 @@
+
 import heapq
 from collections import deque
 from visualize import Direction
-from game import Layout
 
-
-def simulate_ghost_states(layout: Layout, ghosts, step: int):
-    states = []
-    width, height = layout.width, layout.height
-    for ghost in ghosts:
-        try:
-            x, y = ghost.getPosition()
-            direction = ghost.getDirection()
-            dx, dy = Direction._directions[direction]
-            for _ in range(step):
-                nx, ny = x + dx, y + dy
-                within = (0 <= nx < width and 0 <= ny < height)
-                is_wall = False
-                if within:
-                    try:
-                        is_wall = layout.walls.get_at((nx, ny)) == (255, 255, 255)
-                    except (IndexError, ValueError):
-                        is_wall = True
-                if (not within) or is_wall:
-                    direction = Direction.WEST if direction == Direction.EAST else Direction.EAST
-                    dx, dy = Direction._directions[direction]
-                    nx, ny = x + dx, y + dy
-                    within2 = (0 <= nx < width and 0 <= ny < height)
-                    if within2:
-                        try:
-                            if layout.walls.get_at((nx, ny)) == (255, 255, 255):
-                                nx, ny = x, y
-                        except (IndexError, ValueError):
-                            nx, ny = x, y
-                    else:
-                        nx, ny = x, y
-                x, y = nx, ny
-            states.append((x, y, direction))
-        except Exception:
-            continue
-    return states
-
-
-def simulate_single_ghost_state(layout: Layout, ghost, step: int):
-    width, height = layout.width, layout.height
-    try:
-        x, y = ghost.getPosition()
-        direction = ghost.getDirection()
-        dx, dy = Direction._directions[direction]
-        for _ in range(step):
+# ============================ BFS metric dùng cho heuristic ============================
+def _bfs_metric(layout, start, passable_fn):
+    q = deque([start])
+    dist = {start: 0}
+    while q:
+        x, y = q.popleft()
+        for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
             nx, ny = x + dx, y + dy
-            within = (0 <= nx < width and 0 <= ny < height)
-            is_wall = False
-            if within:
-                try:
-                    is_wall = layout.walls.get_at((nx, ny)) == (255, 255, 255)
-                except (IndexError, ValueError):
-                    is_wall = True
-            if (not within) or is_wall:
-                direction = Direction.WEST if direction == Direction.EAST else Direction.EAST
-                dx, dy = Direction._directions[direction]
-                nx, ny = x + dx, y + dy
-                within2 = (0 <= nx < width and 0 <= ny < height)
-                if within2:
-                    try:
-                        if layout.walls.get_at((nx, ny)) == (255, 255, 255):
-                            nx, ny = x, y
-                    except (IndexError, ValueError):
-                        nx, ny = x, y
-                else:
-                    nx, ny = x, y
-            x, y = nx, ny
-        return (x, y, direction)
-    except Exception:
-        return None
+            if 0 <= nx < layout.width and 0 <= ny < layout.height:
+                if (nx, ny) not in dist and passable_fn((nx, ny)):
+                    dist[(nx, ny)] = dist[(x, y)] + 1
+                    q.append((nx, ny))
+    return dist
 
+def _prim_mst(points, dist_cache):
+    if not points:
+        return 0
+    used = {points[0]}
+    total = 0
+    while len(used) < len(points):
+        best = float("inf")
+        best_v = None
+        for u in used:
+            du = dist_cache[u]
+            for v in points:
+                if v in used:
+                    continue
+                d = du.get(v, float("inf"))
+                if d < best:
+                    best = d
+                    best_v = v
+        if best == float("inf"):
+            return float("inf")
+        total += best
+        used.add(best_v)
+    return total
 
-class AStarDynamicSearch:
-    """
-    Tìm kiếm A* động theo từng bước, né ma và tránh lặp.
-    """
-
-    def __init__(self, problem, corners):
+# ============================ Heuristic Lower Bound ============================
+class _HeuristicLB:
+    def __init__(self, problem):
         self.problem = problem
-        self.corners = corners
-        self.recent_positions = deque(maxlen=10)
-        self.last_selected_action = None
+        self.layout = problem.layout
 
-    def find_next_action(self, current_state, ghosts):
-        if not self.recent_positions or self.recent_positions[-1] != current_state.pos:
-            self.recent_positions.append(current_state.pos)
-
-        # Ưu tiên ăn thức ăn kề nếu an toàn
-        food_grid_now = self.problem.getFoodGrid()
-        cx, cy = current_state.pos
-        
-        # Kiểm tra magical pie trước (ưu tiên cao hơn)
-        for direction, (dx, dy) in Direction._directions.items():
-            if direction == Direction.STOP:
-                continue
-            nx, ny = cx + dx, cy + dy
-            if (0 <= nx < len(food_grid_now[0]) and 0 <= ny < len(food_grid_now)):
-                try:
-                    # Kiểm tra magical pie
-                    if self.problem.isMagicalPie((nx, ny)):
-                        if not self.isStepDangerous((cx, cy), (nx, ny), ghosts, step=1):
-                            self.last_selected_action = direction
-                            return direction
-                except Exception:
-                    pass
-        
-        # Kiểm tra thức ăn thường
-        for direction, (dx, dy) in Direction._directions.items():
-            if direction == Direction.STOP:
-                continue
-            nx, ny = cx + dx, cy + dy
-            if (0 <= nx < len(food_grid_now[0]) and 0 <= ny < len(food_grid_now)):
-                try:
-                    if food_grid_now[ny][nx]:
-                        if not self.isStepDangerous((cx, cy), (nx, ny), ghosts, step=1):
-                            self.last_selected_action = direction
-                            return direction
-                except Exception:
-                    pass
-
-        path = self.aStarToGoal(current_state, ghosts)
-        if not path:
-            return Direction.STOP
-
-        start_pos = current_state.pos
-        first_dir = path[0]
-        dx, dy = Direction._directions[first_dir]
-        first_pos = (start_pos[0] + dx, start_pos[1] + dy)
-        if self.isStepDangerous(start_pos, first_pos, ghosts, step=1):
-            alt_dir = self.chooseSaferAlternative(start_pos, ghosts)
-            self.last_selected_action = alt_dir if alt_dir is not None else first_dir
-            return self.last_selected_action
-
-        self.last_selected_action = first_dir
-        return first_dir
-
-    def aStarToGoal(self, current_state, ghosts):
-        start = current_state.pos
-        food_grid = self.problem.getFoodGrid()
-
-        food_targets = [(x, y)
-                        for y in range(len(food_grid))
-                        for x in range(len(food_grid[y])) if food_grid[y][x]]
-        if food_targets:
-            def h(pos):
-                px, py = pos
-                local_count = 0
-                radius = 3  # Tăng radius để tính toán chính xác hơn
-                
-                # Đếm thức ăn trong vùng lân cận
-                for yy in range(max(0, py - radius), min(len(food_grid), py + radius + 1)):
-                    row = food_grid[yy]
-                    for xx in range(max(0, px - radius), min(len(row), px + radius + 1)):
-                        if row[xx]:
-                            local_count += 1
-                
-                # Tính khoảng cách đến thức ăn gần nhất
-                min_distance = float('inf')
-                for fx, fy in food_targets:
-                    distance = abs(px - fx) + abs(py - fy)
-                    min_distance = min(min_distance, distance)
-                
-                # Heuristic kết hợp: ưu tiên vùng có nhiều thức ăn và gần thức ăn
-                base = len(food_targets)
-                density_bonus = 0.5 * local_count  # Thưởng cho vùng có nhiều thức ăn
-                distance_penalty = 0.3 * min_distance  # Phạt cho khoảng cách xa
-                
-                score = base - distance_penalty + density_bonus
-                return max(0, score)
-
-            def is_goal(pos):
-                return food_grid[pos[1]][pos[0]]
-        else:
-            exits = getattr(self.problem.layout, 'exit_gates', [])
-            if not exits:
-                return []
-
-            def h(pos):
-                px, py = pos
-                return min(max(abs(px - ex), abs(py - ey)) for (ex, ey) in exits)
-
-            def is_goal(pos):
-                return pos in exits
-
-        frontier = []
-        heapq.heappush(frontier, (h(start), 0, start, []))
-        visited = set()
-
-        while frontier:
-            f, g, pos, path = heapq.heappop(frontier)
-            if pos in visited:
-                continue
-            visited.add(pos)
-
-            if is_goal(pos):
-                return path
-
-            k = g + 1
-            predicted_k_states = simulate_ghost_states(self.problem.layout, ghosts, k)
-            predicted_k_positions = {(gx, gy) for (gx, gy, _d) in predicted_k_states}
-            predicted_km1_positions = set()
-            if k > 0:
-                predicted_km1_positions = {(gx, gy) for (gx, gy, _d) in simulate_ghost_states(self.problem.layout, ghosts, k - 1)}
-
-            for next_pos, direction, step_cost in self.problem.getSuccessors(pos):
-                if direction == Direction.STOP:
-                    if step_cost != 0:
-                        continue
-                if self.problem.isWall(next_pos):
-                    continue
-                if next_pos in visited:
-                    continue
-
-                ate_food_bonus = 0
-                try:
-                    if food_grid[next_pos[1]][next_pos[0]]:
-                        ate_food_bonus = 1
-                except Exception:
-                    pass
-
-                new_g = g + 1
-
-                if next_pos in predicted_k_positions:
-                    continue
-                if (next_pos in predicted_km1_positions) and (pos in predicted_k_positions):
-                    continue
-
-                step_risk = 0
-                if predicted_k_positions:
-                    min_future_dist = min(abs(next_pos[0] - gx) + abs(next_pos[1] - gy) for (gx, gy) in predicted_k_positions)
-                    if min_future_dist == 1:
-                        step_risk += 80
-                    elif min_future_dist == 2:
-                        step_risk += 30
-
-                danger_on_path = False
-                for (gx, gy, gdir) in predicted_k_states:
-                    dxg, dyg = Direction._directions[gdir]
-                    if dyg == 0 and gy == next_pos[1]:
-                        going_towards = (dxg > 0 and gx <= next_pos[0]) or (dxg < 0 and gx >= next_pos[0])
-                        if going_towards and abs(gx - next_pos[0]) <= 2:
-                            danger_on_path = True
-                            break
-                if danger_on_path:
-                    step_risk += 60
-
-                last_dir = path[-1] if path else current_state.direction
-                if self.isReverseDirection(last_dir, direction):
-                    step_risk += 2
-
-                prev_pos = self.recent_positions[-1] if self.recent_positions else None
-                if prev_pos is not None and next_pos == prev_pos:
-                    step_risk += 6
-                if next_pos in self.recent_positions:
-                    step_risk += 2
-
-                new_f = new_g + h(next_pos) + step_risk
-                if ate_food_bonus:
-                    new_f -= 3.0
-                heapq.heappush(frontier, (new_f, new_g, next_pos, path + [direction]))
-
-        for next_pos, direction, step_cost in self.problem.getSuccessors(start):
-            if direction != Direction.STOP and not self.problem.isWall(next_pos):
-                return [direction]
-        return []
-
-    def isStepDangerous(self, from_pos, to_pos, ghosts, step: int) -> bool:
-        try:
-            predicted = {(gx, gy) for (gx, gy, _d) in simulate_ghost_states(self.problem.layout, ghosts, step)}
-            if to_pos in predicted:
-                return True
-            if step > 0:
-                predicted_prev = {(gx, gy) for (gx, gy, _d) in simulate_ghost_states(self.problem.layout, ghosts, step - 1)}
-                if (to_pos in predicted_prev) and (from_pos in predicted):
-                    return True
-            if predicted:
-                min_dist = min(abs(to_pos[0] - gx) + abs(to_pos[1] - gy) for (gx, gy) in predicted)
-                if min_dist <= 1:
-                    return True
-        except Exception:
-            return False
-        return False
-
-    def chooseSaferAlternative(self, start_pos, ghosts):
-        best_dir = None
-        best_risk = float('inf')
-        for next_pos, direction, step_cost in self.problem.getSuccessors(start_pos):
-            if direction == Direction.STOP:
-                if step_cost != 0:
-                    continue
-            if self.problem.isWall(next_pos):
-                continue
-            risk = 0
+        def _is_wall(pos):
+            x, y = pos
             try:
-                predicted = {(gx, gy) for (gx, gy, _d) in simulate_ghost_states(self.problem.layout, ghosts, 1)}
-                if next_pos in predicted:
-                    risk += 1000
-                else:
-                    if predicted:
-                        min_dist = min(abs(next_pos[0] - gx) + abs(next_pos[1] - gy) for (gx, gy) in predicted)
-                        if min_dist == 1:
-                            risk += 200
-                        elif min_dist == 2:
-                            risk += 80
-            except Exception:
-                pass
-            if risk < best_risk:
-                best_risk = risk
+                return problem.isWall(pos)
+            except TypeError:
+                return problem.isWall(x, y)
+
+        self._passable = lambda pos: not _is_wall(pos)
+        self.cache = {}
+
+    def _d(self, src):
+        if src not in self.cache:
+            self.cache[src] = _bfs_metric(self.layout, src, self._passable)
+        return self.cache[src]
+
+    def h(self, cur, remaining_dots, exits):
+        if not remaining_dots:
+            if not exits:
+                return 0
+            dcur = self._d(cur)
+            return min(dcur.get(e, float("inf")) for e in exits) or 0
+
+        dcur = self._d(cur)
+        nd = min(dcur.get(p, float("inf")) for p in remaining_dots)
+
+        dist_cache = {p: self._d(p) for p in remaining_dots}
+        mst = _prim_mst(remaining_dots, dist_cache)
+
+        if exits:
+            to_exit = min(
+                dist_cache[p].get(e, float("inf"))
+                for p in remaining_dots
+                for e in exits
+            )
+        else:
+            to_exit = 0
+
+        total = 0
+        for v in (nd, mst, to_exit):
+            if v != float("inf"):
+                total += v
+        return total
+
+# ============================ A* Search Implementation ============================
+class AStarDynamicSearch:
+    def __init__(self, problem, corners=None):
+        self.problem = problem
+        self.corners = corners or {}
+        self.recent_positions = deque(maxlen=8)
+        self.hfun = _HeuristicLB(problem)
+
+    def _collect_game_facts(self, state):
+        pos = state.getPosition()
+        layout = self.problem.layout
+        food_grid = self.problem.getFoodGrid()
+        dots = [
+            (x, y)
+            for y in range(layout.height)
+            for x in range(layout.width)
+            if food_grid[y][x]
+        ]
+        exits = list(getattr(layout, "exit_gates", []))
+        pies = set(self.problem.getMagicalPies())
+        return pos, dots, exits, pies
+
+    def _is_goal(self, pos, dots, exits):
+        return (not dots) and (pos in exits if exits else False)
+
+    def _neighbors_game(self, pos):
+        for nxt, direction, cost in self.problem.getSuccessors(pos):
+            # Giữ STOP khi teleport (nxt != pos). Bỏ WAIT STOP thường (nxt == pos).
+            if direction == Direction.STOP and nxt == pos:
+                continue
+            yield nxt, direction, cost
+
+    def _first_safe_or_best(self, start_pos):
+        best_dir = Direction.STOP
+        for nxt, direction, _ in self.problem.getSuccessors(start_pos):
+            if direction != Direction.STOP:
                 best_dir = direction
+                break
         return best_dir
 
-    def isReverseDirection(self, prev_dir, new_dir):
-        if prev_dir == Direction.NORTH and new_dir == Direction.SOUTH:
-            return True
-        if prev_dir == Direction.SOUTH and new_dir == Direction.NORTH:
-            return True
-        if prev_dir == Direction.EAST and new_dir == Direction.WEST:
-            return True
-        if prev_dir == Direction.WEST and new_dir == Direction.EAST:
-            return True
-        return False
+    def find_next_action(self, current_state, ghosts):
+        start_pos, dots, exits, pies = self._collect_game_facts(current_state)
+        if not self.recent_positions or self.recent_positions[-1] != start_pos:
+            self.recent_positions.append(start_pos)
+
+        if self._is_goal(start_pos, dots, exits):
+            return Direction.STOP
+
+        start_pie_on = 1 if start_pos in pies else 0
+        start = (start_pos[0], start_pos[1], start_pie_on)
+
+        remaining = set(dots)
+
+        openh = []
+        gscore = {start: 0}
+        first_move = {start: Direction.STOP}
+
+        h0 = self.hfun.h(start_pos, list(remaining), exits)
+        heapq.heappush(openh, (h0, 0, start))
+
+        visited = set()
+
+        while openh:
+            f, g, cur = heapq.heappop(openh)
+            if cur in visited:
+                continue
+            visited.add(cur)
+
+            x, y, pie_on = cur
+            cur_pos = (x, y)
+
+            # Remaining dots cho trạng thái hiện tại
+            rem = remaining
+            if cur_pos in rem:
+                rem = rem - {cur_pos}
+
+            if self._is_goal(cur_pos, list(rem), exits):
+                return first_move[cur]
+
+            for nxt_pos, direction, step_cost in self._neighbors_game(cur_pos):
+                nx, ny = nxt_pos
+                nxt_pie_on = 1 if nxt_pos in pies else pie_on
+                nxt = (nx, ny, nxt_pie_on)
+                ng = g + step_cost
+                if nxt_pos in self.recent_positions:
+                    ng += 2
+
+                if nxt not in gscore or ng < gscore[nxt]:
+                    gscore[nxt] = ng
+                    h = self.hfun.h(nxt_pos, list(rem), exits)
+                    nf = ng + h
+                    heapq.heappush(openh, (nf, ng, nxt))
+                    if cur == start:
+                        first_move[nxt] = direction
+                    else:
+                        first_move[nxt] = first_move[cur]
+
+        return self._first_safe_or_best(start_pos)

@@ -156,9 +156,8 @@ class BasePacmanGame:
 
     def update(self):
         """Cập nhật trạng thái game"""
-        # Giảm thời gian power nếu đang có
-        if self.power_timer > 0:
-            self.power_timer -= 1
+        # KHÔNG giảm power_timer ở đây vì update() được gọi mỗi frame
+        # power_timer sẽ được giảm trong move_pacman() khi thực sự di chuyển
         
         pos = self.state.getPosition()
         
@@ -185,9 +184,10 @@ class BasePacmanGame:
             self.power_timer = 5  # Bật chế độ siêu Pacman trong 5 bước đi.
             self.score += 50  # Tăng 50 điểm cho bánh kỳ diệu
         
-        # Nếu có power, thử ăn tường xung quanh
+        # Nếu có power, ăn tường khi Pacman đi qua trong 5 bước
         if self.power_timer > 0:
-            self.try_eat_walls_around_position(pos)
+            # Ăn tường tại vị trí hiện tại nếu có
+            self.try_eat_wall_at_current_position(pos)
         
         # Di chuyển tất cả ghosts
         for ghost in self.layout.ghosts:
@@ -318,22 +318,13 @@ class BasePacmanGame:
             except (IndexError, ValueError):
                 pass  # Bỏ qua nếu có lỗi
 
-    def try_eat_walls_around_position(self, pos):
-        """Thử ăn tường xung quanh vị trí hiện tại khi có power"""
+    def try_eat_wall_at_current_position(self, pos):
+        """Chỉ ăn tường tại vị trí hiện tại khi có power (không ăn xung quanh)"""
         x, y = pos
         
-        # Kiểm tra 4 hướng xung quanh
-        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Bắc, Nam, Đông, Tây
-        
-        for dx, dy in directions:
-            new_x, new_y = x + dx, y + dy
-            
-            # Kiểm tra bounds
-            if (0 <= new_x < self.layout.width and 0 <= new_y < self.layout.height):
-                # Thử ăn tường nếu có
-                if self.isWall((new_x, new_y)):
-                    self.eat_wall_at_position((new_x, new_y))
-                    break  # Chỉ ăn một tường mỗi lần để tránh spam
+        # Chỉ ăn tường tại vị trí hiện tại nếu có
+        if self.isWall(pos):
+            self.eat_wall_at_position(pos)
 
     def show_win_effect(self):
         """Hiệu ứng thắng cuộc"""

@@ -171,7 +171,14 @@ class Layout:
         # Kiểm tra số bước đi của Pacman.
         if hasattr(self, 'prev_pacman_pos'):
             if self.prev_pacman_pos != pacman_pos:
-                self.steps += 1  # Tăng số bước đi nếu vị trí Pacman thay đổi.
+                # Chỉ tăng số bước nếu không phải teleport (khoảng cách > 1)
+                prev_x, prev_y = self.prev_pacman_pos
+                curr_x, curr_y = pacman_pos
+                distance = abs(curr_x - prev_x) + abs(curr_y - prev_y)
+                
+                # Nếu khoảng cách <= 1 thì là di chuyển bình thường, nếu > 1 thì là teleport
+                if distance <= 1:
+                    self.steps += 1  # Tăng số bước đi chỉ khi di chuyển bình thường
         else:
             self.steps = 0  # Khởi tạo số bước đi nếu chưa có.
 
@@ -205,8 +212,13 @@ class Layout:
         # Hiển thị điểm số ở bên trái trên cùng
         self.renderer.draw_score(score)
         
-        # Hiển thị vị trí ở bên phải trên cùng
-        self.renderer.draw_position(pacman_pos)
+        # Hiển thị thông tin ở bên phải trên cùng
+        if hasattr(self, 'manual_mode') and self.manual_mode:
+            # Trong chế độ thủ công, hiển thị số bước thay vì tọa độ
+            self.renderer.draw_step_count_only(self.steps)
+        else:
+            # Trong chế độ tự động, hiển thị tọa độ như bình thường
+            self.renderer.draw_position(pacman_pos)
 
         # Cập nhật màn hình và điều chỉnh tốc độ khung hình.
         self.renderer.update_display()

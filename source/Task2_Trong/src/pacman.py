@@ -132,10 +132,10 @@ class PacmanGame(BasePacmanGame):
             new_pos = (self.state.getPosition()[0] + vector[0], 
                       self.state.getPosition()[1] + vector[1])
             
-            # Kiểm tra tường
-            if not self.isWall(new_pos):
-                # Di chuyển Pacman
-                self.state = self.state.generateState(vector, self.layout.opposite_corners)
+            # Kiểm tra tường - cho phép di chuyển vào tường nếu có power
+            if not self.isWall(new_pos) or self.power_timer > 0:
+                # Di chuyển Pacman - KHÔNG tự động teleport trong chế độ thủ công
+                self.state = self.state.generateState(vector, {})  # Truyền dict rỗng để tắt teleport tự động
                 
                 # Cập nhật game state
                 self.update()
@@ -143,8 +143,12 @@ class PacmanGame(BasePacmanGame):
                 # Tăng bộ đếm bước khi thực sự di chuyển
                 self.step_count += 1
                 
-                # Kiểm tra xem có cần xoay ma trận không (mỗi 30 bước)
-                if self.step_count % 30 == 0:
+                # Giảm power_timer khi thực sự di chuyển
+                if self.power_timer > 0:
+                    self.power_timer -= 1
+                
+                # Kiểm tra xem có cần xoay ma trận không (mỗi 30 bước, bắt đầu từ bước 30)
+                if self.step_count > 0 and self.step_count % 30 == 0:
                     self.rotate_maze_and_update_coordinates()
                 
                 # Lưu hành động và vị trí

@@ -294,6 +294,21 @@ class GameVisualizer:
         
         pygame.draw.rect(self.screen, (0, 0, 0), text_rect.inflate(20, 10))
         self.screen.blit(text_surface, text_rect)
+    
+    def draw_step_count_only(self, step_count):
+        """Hiển thị chỉ số bước ở bên phải thanh thông tin (chế độ thủ công)"""
+        font = pygame.font.Font(None, 36)
+        
+        right_x = (self.width * self.cell_size) - 20
+        center_y = self.info_bar_height // 2
+        
+        step_text = f"Steps: {step_count}"
+        text_surface = font.render(step_text, True, (255, 255, 255))
+        text_rect = text_surface.get_rect()
+        text_rect.center = (right_x - text_rect.width // 2, center_y)
+        
+        pygame.draw.rect(self.screen, (0, 0, 0), text_rect.inflate(20, 10))
+        self.screen.blit(text_surface, text_rect)
 
     def draw_win_message(self):
         """Vẽ thông báo thắng cuộc"""

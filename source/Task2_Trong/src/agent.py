@@ -17,6 +17,38 @@ class AgentGame(BasePacmanGame):
         self.simple_dynamic_search = None
 
     def getSuccessors(self, pos):
+        """Các bước đi hợp lệ từ vị trí hiện tại.
+        - Teleport: trả về successor với Direction.STOP và next_pos = cổng đối diện (cost=1)
+        - Di chuyển 4 hướng: vào tường chỉ khi power_timer > 0
+        - Không thêm WAIT (STOP) thường để tránh vòng lặp.
+        """
+        successors = []
+        x, y = pos
+        width, height = self.layout.width, self.layout.height
+        corners = self.layout.opposite_corners
+
+        # 1) Teleport (nếu đang đứng trên cổng)
+        if (x, y) in corners:
+            dst = corners[(x, y)]
+            # Teleport là một bước riêng: next_pos = đích teleport, action = STOP, cost = 1
+            successors.append((dst, Direction.STOP, 1))
+
+        # 2) 4 hướng di chuyển
+        for direction, (dx, dy) in Direction._directions.items():
+            if direction == Direction.STOP:
+                continue  # không tạo WAIT thường
+            nx, ny = x + dx, y + dy
+
+            # Bound check
+            if not (0 <= nx < width and 0 <= ny < height):
+                continue
+
+            # Cho đi xuyên tường khi còn hiệu lực power
+            if not self.isWall((nx, ny)) or self.power_timer > 0:
+                successors.append(((nx, ny), direction, 1))
+
+        return successors
+
         """Tìm các bước đi có thể từ vị trí hiện tại"""
         successors = []
         x, y = pos
@@ -83,8 +115,8 @@ class AgentGame(BasePacmanGame):
             step_count += 1
             current_pos = self.state.getPosition()
             
-            # Kiểm tra xoay ma trận mỗi 30 bước
-            if step_count % 30 == 0:
+            # Kiểm tra xoay ma trận mỗi 30 bước (bắt đầu từ bước 30)
+            if step_count > 0 and step_count % 30 == 0:
                 self.rotate_maze_and_update_coordinates()
                 # Cập nhật lại hệ thống tìm kiếm sau khi xoay
                 self.simple_dynamic_search = AStarDynamicSearch(self, corners)
