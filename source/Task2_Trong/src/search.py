@@ -4,7 +4,7 @@ from visualize import Direction
 
 
 # ============================ BFS metric dùng cho heuristic ============================
-def _bfs_metric(layout, start, passable_fn):
+def bfs_metric(layout, start, passable_fn):
     q = deque([start])
     dist = {start: 0}
     while q:
@@ -18,7 +18,7 @@ def _bfs_metric(layout, start, passable_fn):
     return dist
 
 
-def _prim_mst(points, dist_cache):
+def prim_mst(points, dist_cache):
     if not points:
         return 0
     used = {points[0]}
@@ -43,38 +43,38 @@ def _prim_mst(points, dist_cache):
 
 
 # ============================ Heuristic Lower Bound ============================
-class _HeuristicLB:
+class heuristic:
     def __init__(self, problem):
         self.problem = problem
         self.layout = problem.layout
 
-        def _is_wall(pos):
+        def is_wall(pos):
             x, y = pos
             try:
                 return problem.isWall(pos)
             except TypeError:
                 return problem.isWall(x, y)
 
-        self._passable = lambda pos: not _is_wall(pos)
+        self.passable = lambda pos: not is_wall(pos)
         self.cache = {}
 
-    def _d(self, src):
+    def d(self, src):
         if src not in self.cache:
-            self.cache[src] = _bfs_metric(self.layout, src, self._passable)
+            self.cache[src] = bfs_metric(self.layout, src, self.passable)
         return self.cache[src]
 
     def h(self, cur, remaining_dots, exits):
         if not remaining_dots:
             if not exits:
                 return 0
-            dcur = self._d(cur)
+            dcur = self.d(cur)
             return min(dcur.get(e, float("inf")) for e in exits) or 0
 
-        dcur = self._d(cur)
+        dcur = self.d(cur)
         nd = min(dcur.get(p, float("inf")) for p in remaining_dots)
 
-        dist_cache = {p: self._d(p) for p in remaining_dots}
-        mst = _prim_mst(remaining_dots, dist_cache)
+        dist_cache = {p: self.d(p) for p in remaining_dots}
+        mst = prim_mst(remaining_dots, dist_cache)
 
         if exits:
             to_exit = min(
@@ -93,14 +93,14 @@ class _HeuristicLB:
 
 
 # ============================ A* Search Implementation ============================
-class AStarDynamicSearch:
+class astar:
     def __init__(self, problem, corners=None):
         self.problem = problem
         self.corners = corners or {}
         self.recent_positions = deque(maxlen=8)
-        self.hfun = _HeuristicLB(problem)
+        self.hfun = heuristic(problem)
 
-    def _collect_game_facts(self, state):
+    def collect_game_facts(self, state):
         pos = state.getPosition()
         layout = self.problem.layout
         food_grid = self.problem.getFoodGrid()
@@ -114,16 +114,16 @@ class AStarDynamicSearch:
         pies = set(self.problem.getMagicalPies())
         return pos, dots, exits, pies
 
-    def _is_goal(self, pos, dots, exits):
+    def is_goal(self, pos, dots, exits):
         return (not dots) and (pos in exits if exits else False)
 
-    def _neighbors_game(self, pos):
+    def neighbors_game(self, pos):
         for nxt, direction, cost in self.problem.getSuccessors(pos):
             if direction == Direction.STOP and nxt == pos:
                 continue
             yield nxt, direction, cost
 
-    def _first_safe_or_best(self, start_pos):
+    def first_safe_or_best(self, start_pos):
         best_dir = Direction.STOP
         for nxt, direction, _ in self.problem.getSuccessors(start_pos):
             if direction != Direction.STOP:
@@ -132,11 +132,11 @@ class AStarDynamicSearch:
         return best_dir
 
     def find_next_action(self, current_state, ghosts):
-        start_pos, dots, exits, pies = self._collect_game_facts(current_state)
+        start_pos, dots, exits, pies = self.collect_game_facts(current_state)
         if not self.recent_positions or self.recent_positions[-1] != start_pos:
             self.recent_positions.append(start_pos)
 
-        if self._is_goal(start_pos, dots, exits):
+        if self.is_goal(start_pos, dots, exits):
             return Direction.STOP
 
         start_pie_on = 1 if start_pos in pies else 0
@@ -162,10 +162,10 @@ class AStarDynamicSearch:
             if cur_pos in rem:
                 rem.remove(cur_pos)
 
-            if self._is_goal(cur_pos, rem, exits):
+            if self.is_goal(cur_pos, rem, exits):
                 return first_move[cur]
 
-            for nxt_pos, direction, step_cost in self._neighbors_game(cur_pos):
+            for nxt_pos, direction, step_cost in self.neighbors_game(cur_pos):
                 nx, ny = nxt_pos
                 nxt_pie_on = 1 if nxt_pos in pies else pie_on
                 nxt_rem = rem - {nxt_pos} if nxt_pos in rem else rem
@@ -187,4 +187,4 @@ class AStarDynamicSearch:
                     else:
                         first_move[nxt_state] = first_move[cur]
 
-        return self._first_safe_or_best(start_pos)
+        return self.first_safe_or_best(start_pos)
