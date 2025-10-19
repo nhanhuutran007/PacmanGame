@@ -2,64 +2,94 @@
 
 ## 📋 Tổng quan đề tài
 
-**Pacman Game** là một dự án game cổ điển được phát triển bằng Python và Pygame, áp dụng các thuật toán tìm kiếm trong Trí Tuệ Nhân Tạo. Dự án bao gồm hai chế độ chơi: **Tự động (AI)** và **Thủ công (Manual)**, với các tính năng đặc biệt như xoay ma trận động và điều khiển linh hoạt.
+Dự án **Pacman Game** bao gồm hai phần chính nghiên cứu về các thuật toán tìm kiếm trong Trí Tuệ Nhân Tạo:
+
+### 🧩 **Task 1: 8-Puzzle Problem**
+- **Mục tiêu:** Giải bài toán 8-puzzle sử dụng các thuật toán tìm kiếm
+- **Thuật toán:** BFS, A* với Manhattan Distance và Misplaced Tiles heuristics
+- **Tính năng:** So sánh hiệu quả giữa các thuật toán, visualization cây tìm kiếm
+
+### 🎮 **Task 2: Pacman Game**
+- **Mục tiêu:** Game Pacman với hai chế độ chơi: **Tự động (AI)** và **Thủ công (Manual)**
+- **Thuật toán:** A* search cho AI, điều khiển thủ công với tính năng đặc biệt
+- **Tính năng:** Xoay ma trận động, teleport, ăn tường, đồ họa với Pygame
 
 ## 🎯 Mục tiêu dự án
 
-- **Nghiên cứu thuật toán tìm kiếm:** Áp dụng các thuật toán BFS, DFS, A* trong việc tìm đường đi tối ưu
-- **Phát triển game engine:** Xây dựng hệ thống game hoàn chỉnh với đồ họa và âm thanh
-- **Tối ưu hóa trải nghiệm:** Tạo ra giao diện thân thiện và điều khiển mượt mà
-- **Tính năng đặc biệt:** Xoay ma trận động, teleport thủ công, và các hiệu ứng đặc biệt
+- **Nghiên cứu thuật toán tìm kiếm:** Áp dụng BFS, A* trong các bài toán thực tế
+- **So sánh hiệu quả:** Đánh giá hiệu suất giữa các thuật toán và heuristic khác nhau
+- **Phát triển game engine:** Xây dựng hệ thống game hoàn chỉnh với đồ họa
+- **Tối ưu hóa trải nghiệm:** Giao diện thân thiện và điều khiển mượt mà
 
 ## 🏗️ Cấu trúc dự án
 
 ```
 PacmanGame/
 ├── source/
-│   └── Task2_Trong/
-│       ├── assets/                    # Tài nguyên đồ họa
-│       │   ├── Ghost_image/          # Hình ảnh ma
-│       │   └── pacman_images/         # Hình ảnh Pacman
-│       ├── input/                     # File đầu vào
+│   ├── Task1/                        # 8-Puzzle Problem
+│   │   └── Task1.ipynb              # Jupyter notebook với thuật toán BFS, A*
+│   └── Task2/                        # Pacman Game
+│       ├── assets/                   # Tài nguyên đồ họa
+│       │   ├── Ghost_image/         # Hình ảnh ma
+│       │   │   └── unnamed.png
+│       │   └── pacman_images/        # Hình ảnh Pacman
+│       │       ├── 1.png, 2.png, 3.png, 4.png
+│       ├── input/                    # File đầu vào
 │       │   └── task02_pacman_example_map.txt
-│       ├── output/                    # File đầu ra
-│       │   ├── output.txt            # Kết quả chế độ AI
-│       │   ├── output_manual.txt    # Kết quả chế độ thủ công
-│       │   ├── Path.txt             # Đường đi AI
-│       │   └── Path_manual.txt      # Đường đi thủ công
-│       ├── src/                      # Mã nguồn chính
-│       │   ├── agent.py             # AI Agent - Trí tuệ nhân tạo
-│       │   ├── base_pacman.py       # Base class + Ghost class
-│       │   ├── game.py              # Layout Manager - Tạo mê cung
-│       │   ├── pacman.py            # Manual Pacman - Điều khiển thủ công
-│       │   ├── search.py            # Thuật toán tìm kiếm A*
-│       │   ├── state.py             # Quản lý trạng thái game
-│       │   └── visualize.py         # Visualization Engine - Đồ họa
-│       ├── main.py                  # Chương trình chính (AI)
-│       ├── main_manual.py           # Chương trình thủ công
-│       └── main_menu.py              # Menu lựa chọn
+│       ├── output/                   # File đầu ra
+│       │   ├── output.txt           # Kết quả chế độ AI
+│       │   ├── output_manual.txt   # Kết quả chế độ thủ công
+│       │   ├── Path.txt            # Đường đi AI
+│       │   └── Path_manual.txt     # Đường đi thủ công
+│       ├── src/                     # Mã nguồn chính
+│       │   ├── agent.py            # AI Agent - Trí tuệ nhân tạo
+│       │   ├── base_pacman.py      # Base class + Ghost class
+│       │   ├── game.py             # Layout Manager - Tạo mê cung
+│       │   ├── pacman.py           # Manual Pacman - Điều khiển thủ công
+│       │   ├── search.py           # Thuật toán tìm kiếm A*
+│       │   ├── state.py            # Quản lý trạng thái game
+│       │   └── visualize.py        # Visualization Engine - Đồ họa
+│       └── main_menu.py            # Menu lựa chọn
+├── demo.txt                         # Link Google Drive demo
 └── README.md
 ```
 
 ## 📁 Mô tả chi tiết các file
 
-### 🎮 File chương trình chính
+### 🧩 **Task 1: 8-Puzzle Problem**
 
-#### `main.py`
-- **Chức năng:** Chạy game ở chế độ tự động (AI)
-- **Thuật toán:** Sử dụng các thuật toán tìm kiếm (BFS, DFS, A*)
-- **Đầu vào:** File map từ thư mục `input/`
-- **Đầu ra:** Kết quả và đường đi trong thư mục `output/`
+#### `Task1.ipynb` - Jupyter Notebook
+- **Chức năng:** Nghiên cứu và so sánh các thuật toán tìm kiếm cho bài toán 8-puzzle
+- **Thuật toán được implement:**
+  - **BFS (Breadth-First Search):** Tìm kiếm theo chiều rộng
+  - **A* với Manhattan Distance:** Heuristic dựa trên khoảng cách Manhattan
+  - **A* với Misplaced Tiles:** Heuristic dựa trên số ô sai vị trí
+- **Tính năng:**
+  - So sánh hiệu quả giữa các thuật toán
+  - Visualization cây tìm kiếm bằng Graphviz
+  - Thống kê số node được mở rộng, thời gian thực thi
+  - Tạo state ngẫu nhiên để test
+  - Multiple goal states (4 trạng thái đích khác nhau)
 
-#### `main_manual.py`
-- **Chức năng:** Chạy game ở chế độ điều khiển thủ công
-- **Tính năng:** Điều khiển bằng phím, xoay ma trận động
-- **Đặc biệt:** Teleport thủ công, ăn tường khi có power
+#### **Classes chính:**
+- **`Node`:** Đại diện cho một trạng thái trong 8-puzzle
+- **`A_star`:** Thuật toán A* với heuristic tùy chỉnh
+- **`BFS`:** Thuật toán tìm kiếm theo chiều rộng
+- **`ManhattanHeuristic`:** Heuristic Manhattan Distance
+- **`MisplacedHeuristic`:** Heuristic Misplaced Tiles
 
-#### `main_menu.py`
+#### **Kết quả thực nghiệm:**
+- **A* Manhattan:** Hiệu quả cao nhất (142 nodes, 45.65ms)
+- **A* Misplaced:** Hiệu quả trung bình (162 nodes, 28.78ms)  
+- **BFS:** Chậm nhất (14,464 nodes, 3710.29ms)
+
+### 🎮 **Task 2: Pacman Game**
+
+#### `main_menu.py` - Menu chính
 - **Chức năng:** Menu lựa chọn chế độ chơi
 - **Giao diện:** Console menu thân thiện
 - **Tích hợp:** Kết nối các chế độ chơi khác nhau
+- **Cách chạy:** `python main_menu.py`
 
 ### 🧠 File logic game (src/)
 
@@ -141,43 +171,55 @@ PacmanGame/
 
 ### 📋 Yêu cầu hệ thống
 - **Python:** 3.8 trở lên
-- **Thư viện:** pygame, numpy
+- **Thư viện:** pygame, numpy, graphviz, jupyter
 - **OS:** Windows, macOS, Linux
 
 ### 🔧 Cài đặt
 ```bash
-# Cài đặt pygame
-pip install pygame
+# Cài đặt các thư viện cần thiết
+pip install pygame numpy graphviz jupyter
 
-# Cài đặt numpy (nếu cần)
-pip install numpy
+# Hoặc cài đặt từng thư viện riêng lẻ
+pip install pygame      # Cho Task2 (Pacman Game)
+pip install numpy       # Cho Task1 (8-Puzzle)
+pip install graphviz    # Cho visualization
+pip install jupyter     # Cho Task1 notebook
 ```
 
-### 🎮 Cách chạy
+### 🧩 **Task 1: 8-Puzzle Problem**
 
-#### 1. **Chế độ Menu (Khuyến nghị)**
+#### **Cách chạy Task1:**
 ```bash
-cd source/Task2_Trong
+# Mở Jupyter notebook
+cd source/Task1
+jupyter notebook Task1.ipynb
+```
+
+#### **Nội dung Task1:**
+- **Cell 1-2:** Định nghĩa Node class và A* algorithm
+- **Cell 3:** Tách heuristic riêng biệt (Manhattan, Misplaced)
+- **Cell 4:** BFS algorithm
+- **Cell 5:** Visualization function
+- **Cell 6-14:** Test cases và so sánh hiệu quả
+
+#### **Kết quả mong đợi:**
+- So sánh hiệu quả giữa BFS, A* Manhattan, A* Misplaced
+- Visualization cây tìm kiếm
+- Thống kê số node được mở rộng và thời gian thực thi
+
+### 🎮 **Task 2: Pacman Game**
+
+#### **Cách chạy Task2:**
+```bash
+# Chạy menu chính (Khuyến nghị)
+cd source/Task2
 python main_menu.py
 ```
-- Chọn chế độ chơi từ menu
-- Tự động chuyển đổi giữa AI và Manual
 
-#### 2. **Chế độ AI (Tự động)**
-```bash
-cd source/Task2_Trong
-python main.py
-```
-- Game tự động chạy với thuật toán AI
-- Kết quả được lưu trong `output/`
-
-#### 3. **Chế độ Thủ công**
-```bash
-cd source/Task2_Trong
-python main_manual.py
-```
-- Điều khiển bằng phím mũi tên hoặc WASD
-- Tính năng đặc biệt: xoay ma trận, teleport, ăn tường
+#### **Các chế độ chơi:**
+- **Chế độ AI:** Game tự động với thuật toán A*
+- **Chế độ Manual:** Điều khiển thủ công với phím
+- **Tính năng đặc biệt:** Xoay ma trận, teleport, ăn tường
 
 ### 🎯 Điều khiển (Chế độ thủ công)
 
@@ -270,15 +312,17 @@ src/
 
 ## 📊 Kết quả và đánh giá
 
-### **Chế độ AI:**
-- Tìm đường đi tối ưu
-- Kết quả được lưu trong file
-- Phân tích hiệu suất thuật toán
+### **🧩 Task 1 - 8-Puzzle:**
+- **A* Manhattan:** Hiệu quả cao nhất (142 nodes, 45.65ms)
+- **A* Misplaced:** Hiệu quả trung bình (162 nodes, 28.78ms)
+- **BFS:** Chậm nhất (14,464 nodes, 3710.29ms)
+- **Kết luận:** A* với Manhattan Distance cho kết quả tối ưu nhất
 
-### **Chế độ thủ công:**
-- Trải nghiệm game mượt mà
-- Tính năng đặc biệt độc đáo
-- Giao diện thân thiện
+### **🎮 Task 2 - Pacman Game:**
+- **Chế độ AI:** Tìm đường đi tối ưu với A* algorithm
+- **Chế độ Manual:** Trải nghiệm game mượt mà với tính năng đặc biệt
+- **Tính năng độc đáo:** Xoay ma trận, teleport, ăn tường
+- **Giao diện:** Thân thiện với đồ họa Pygame
 
 ## 🤝 Đóng góp
 
