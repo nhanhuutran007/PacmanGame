@@ -1,4 +1,4 @@
-# 🎮 Pacman Game - Trí Tuệ Nhân Tạo
+Trí Tuệ Nhân Tạo
 
 ## 📋 Tổng quan đề tài
 
