@@ -273,56 +273,7 @@ python main_menu.py
 - **Error Handling:** Xử lý lỗi robust
 - **File Organization:** Giảm từ 10 file xuống 7 file
 
-## 🏗️ Cấu trúc file đã tối ưu
 
-### **📁 Trước khi tối ưu (10 files):**
-```
-src/
-├── action.py          # Direction class
-├── animation.py       # PacmanAnimation class  
-├── movement.py        # Movement class
-├── renderer.py        # GameRenderer class
-├── ghost.py           # Ghost class
-├── manual_pacman.py   # ManualPacmanGame class
-├── pacman.py          # PacmanGame class
-├── game.py            # Layout class
-├── search.py          # Search algorithms
-└── state.py           # State management
-```
-
-### **📁 Sau khi tối ưu (7 files):**
-```
-src/
-├── agent.py           # AI Agent (AgentGame)
-├── pacman.py          # Manual Pacman (PacmanGame)  
-├── base_pacman.py     # Base class + Ghost
-├── game.py            # Layout Manager
-├── search.py          # A* Search Algorithm
-├── state.py           # State Management
-└── visualize.py       # All visualization classes
-```
-
-### **🎯 Lợi ích của việc tối ưu:**
-- **📦 Giảm 30% số file:** Từ 10 xuống 7 files
-- **🔄 Code reuse:** Base class cho cả AI và Manual
-- **📝 Clean naming:** Loại bỏ tên có gạch chân
-- **🎨 Centralized graphics:** Tất cả visualization trong một file
-- **🧠 Clear separation:** AI vs Manual rõ ràng
-- **🛠️ Easy maintenance:** Dễ dàng maintain và debug
-
-## 📊 Kết quả và đánh giá
-
-### **🧩 Task 1 - 8-Puzzle:**
-- **A* Manhattan:** Hiệu quả cao nhất (142 nodes, 45.65ms)
-- **A* Misplaced:** Hiệu quả trung bình (162 nodes, 28.78ms)
-- **BFS:** Chậm nhất (14,464 nodes, 3710.29ms)
-- **Kết luận:** A* với Manhattan Distance cho kết quả tối ưu nhất
-
-### **🎮 Task 2 - Pacman Game:**
-- **Chế độ AI:** Tìm đường đi tối ưu với A* algorithm
-- **Chế độ Manual:** Trải nghiệm game mượt mà với tính năng đặc biệt
-- **Tính năng độc đáo:** Xoay ma trận, teleport, ăn tường
-- **Giao diện:** Thân thiện với đồ họa Pygame
 
 ## 🤝 Đóng góp
 
