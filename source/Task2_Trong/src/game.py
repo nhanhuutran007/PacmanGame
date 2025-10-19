@@ -19,11 +19,23 @@ class Layout:
         # Khởi tạo các điểm cổng dịch chuyển (opposite corners).
         # Dịch chuyển chéo góc: (1,1) ↔ (34,16)
         # Dịch chuyển dọc: (1,1) ↔ (1,16) và (34,1) ↔ (34,16)
+        """
         self.opposite_corners = {
             (1, 1): (self.width - 2, self.height - 3),  # (1,1) -> (34,16)
             (self.width - 2, self.height - 3): (1, 1),   # (34,16) -> (1,1)
             (1, self.height - 3): (1, 1),                # (1,16) -> (1,1)
             (self.width - 2, 1): (self.width - 2, self.height - 3)  # (34,1) -> (34,16)
+        }
+        """
+
+        self.opposite_corners = {
+            # Chéo
+            (1, 1): (self.width - 2, self.height - 3),   # (1,1) -> (34,16)
+            (self.width - 2, self.height - 3): (1, 1),   # (34,16) -> (1,1)
+            
+            # Chéo
+            (self.width - 2, 1): (1, self.height - 3),   # (34,1) -> (1,16)
+            (1, self.height - 3): (self.width - 2, 1)    # (1,16) -> (34,1)
         }
         
         # Khởi tạo các đối tượng animation, movement và renderer.
@@ -125,12 +137,16 @@ class Layout:
                     self.exit_gates.append((x, y))
         
         # Cập nhật cổng dịch chuyển
+        """
         self.opposite_corners = {
             (1, 1): (self.width - 2, self.height - 3),  # (1,1) -> (34,16)
             (self.width - 2, self.height - 3): (1, 1),   # (34,16) -> (1,1)
             (1, self.height - 3): (1, 1),                # (1,16) -> (1,1)
             (self.width - 2, 1): (self.width - 2, self.height - 3)  # (34,1) -> (34,16)
         }
+        """
+
+
         
         # Cập nhật renderer và thay đổi kích thước cửa sổ
         self.renderer.resize_window(self.width, self.height)

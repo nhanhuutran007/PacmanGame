@@ -239,6 +239,47 @@ class BasePacmanGame:
         
         # Cập nhật các góc teleport sau khi xoay
         self.update_teleport_corners_after_rotation(old_width, old_height)
+        # --- THÊM DÒNG NÀY ---
+        self.update_opposite_corners_after_rotation(old_width, old_height)
+
+    
+    # Trong file base_pacman.py, bên trong class BasePacmanGame
+
+    def update_opposite_corners_after_rotation(self, old_width, old_height):
+        """
+        Cập nhật các cổng dịch chuyển (opposite_corners) trong layout
+        sau khi xoay 90 độ theo chiều kim đồng hồ.
+        """
+        print("Updating opposite corners...")
+        old_corners = self.layout.opposite_corners
+        new_corners = {}
+
+        # Công thức xoay: (x, y) -> (new_x, new_y)
+        # new_x = old_height - 1 - y
+        # new_y = x
+
+        for (x1, y1), (x2, y2) in old_corners.items():
+            # Xoay vị trí key (x1, y1)
+            new_x1 = old_height - 1 - y1
+            new_y1 = x1
+
+            # Xoay vị trí value (x2, y2)
+            new_x2 = old_height - 1 - y2
+            new_y2 = x2
+
+            # Thêm vào dict mới
+            new_key = (new_x1, new_y1)
+            new_value = (new_x2, new_y2)
+
+            # Đảm bảo key/value nằm trong bounds mới
+            if (0 <= new_key[0] < self.layout.width and 0 <= new_key[1] < self.layout.height and
+                0 <= new_value[0] < self.layout.width and 0 <= new_value[1] < self.layout.height):
+                new_corners[new_key] = new_value
+
+        # Cập nhật dict corners trong layout
+        self.layout.opposite_corners = new_corners
+        print(f"New opposite corners: {self.layout.opposite_corners}")
+
 
     def update_food_coordinates_after_rotation(self, old_food_positions, old_width, old_height):
         """Cập nhật tọa độ thức ăn sau khi xoay ma trận 90 độ"""

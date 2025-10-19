@@ -125,8 +125,38 @@ class AgentGame(BasePacmanGame):
             action = self.simple_dynamic_search.find_next_action(self.state, self.layout.ghosts)
             
             # Thực hiện hành động
+            # Lấy vector
             vector = Direction._directions[action]
-            self.state = self.state.generateState(vector, corners)
+            (dx, dy) = vector
+            (x, y) = self.state.getPosition()
+            new_pos = (x + dx, y + dy)
+            
+            # Kiểm tra xem bước đi có hợp lệ không (giống hệt getSuccessors)
+            is_in_bounds = (0 <= new_pos[0] < self.layout.width and 0 <= new_pos[1] < self.layout.height)
+            is_valid_move = False
+
+            if is_in_bounds:
+                # 1. Hợp lệ nếu không phải tường (hoặc đang có power)
+                if not self.isWall(new_pos) or self.power_timer > 0:
+                    is_valid_move = True
+            
+            # 2. Hợp lệ nếu là teleport (AI trả về action STOP khi đứng ở góc)
+            if (x, y) in corners and action == Direction.STOP:
+                 is_valid_move = True
+
+            # Chỉ tạo state mới NẾU bước đi hợp lệ
+            if is_valid_move:
+                self.state = self.state.generateState(vector, corners)
+                
+                # SỬA THÊM 1 LỖI: Giảm power_timer khi AI di chuyển
+                if self.power_timer > 0 and action != Direction.STOP:
+                    self.power_timer -= 1
+            else:
+                # Nếu AI tính sai (ví dụ: maze xoay) và chọn đi vào tường -> thì đứng yên
+                stop_vector = Direction._directions[Direction.STOP]
+                self.state = self.state.generateState(stop_vector, corners)
+
+            # Gọi update SAU KHI đã có state mới hợp lệ
             self.update()
             
             # Kiểm tra va chạm

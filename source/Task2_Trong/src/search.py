@@ -1,7 +1,7 @@
-
 import heapq
 from collections import deque
 from visualize import Direction
+
 
 # ============================ BFS metric dùng cho heuristic ============================
 def _bfs_metric(layout, start, passable_fn):
@@ -16,6 +16,7 @@ def _bfs_metric(layout, start, passable_fn):
                     dist[(nx, ny)] = dist[(x, y)] + 1
                     q.append((nx, ny))
     return dist
+
 
 def _prim_mst(points, dist_cache):
     if not points:
@@ -39,6 +40,7 @@ def _prim_mst(points, dist_cache):
         total += best
         used.add(best_v)
     return total
+
 
 # ============================ Heuristic Lower Bound ============================
 class _HeuristicLB:
@@ -89,6 +91,7 @@ class _HeuristicLB:
                 total += v
         return total
 
+
 # ============================ A* Search Implementation ============================
 class AStarDynamicSearch:
     def __init__(self, problem, corners=None):
@@ -116,7 +119,6 @@ class AStarDynamicSearch:
 
     def _neighbors_game(self, pos):
         for nxt, direction, cost in self.problem.getSuccessors(pos):
-            # Giữ STOP khi teleport (nxt != pos). Bỏ WAIT STOP thường (nxt == pos).
             if direction == Direction.STOP and nxt == pos:
                 continue
             yield nxt, direction, cost
@@ -138,17 +140,14 @@ class AStarDynamicSearch:
             return Direction.STOP
 
         start_pie_on = 1 if start_pos in pies else 0
-        start = (start_pos[0], start_pos[1], start_pie_on)
-
-        remaining = set(dots)
+        start = (start_pos[0], start_pos[1], start_pie_on, frozenset(dots))
 
         openh = []
         gscore = {start: 0}
         first_move = {start: Direction.STOP}
 
-        h0 = self.hfun.h(start_pos, list(remaining), exits)
+        h0 = self.hfun.h(start_pos, dots, exits)
         heapq.heappush(openh, (h0, 0, start))
-
         visited = set()
 
         while openh:
@@ -157,33 +156,35 @@ class AStarDynamicSearch:
                 continue
             visited.add(cur)
 
-            x, y, pie_on = cur
+            x, y, pie_on, rem = cur
             cur_pos = (x, y)
-
-            # Remaining dots cho trạng thái hiện tại
-            rem = remaining
+            rem = set(rem)
             if cur_pos in rem:
-                rem = rem - {cur_pos}
+                rem.remove(cur_pos)
 
-            if self._is_goal(cur_pos, list(rem), exits):
+            if self._is_goal(cur_pos, rem, exits):
                 return first_move[cur]
 
             for nxt_pos, direction, step_cost in self._neighbors_game(cur_pos):
                 nx, ny = nxt_pos
                 nxt_pie_on = 1 if nxt_pos in pies else pie_on
-                nxt = (nx, ny, nxt_pie_on)
+                nxt_rem = rem - {nxt_pos} if nxt_pos in rem else rem
+                nxt_state = (nx, ny, nxt_pie_on, frozenset(nxt_rem))
+
                 ng = g + step_cost
                 if nxt_pos in self.recent_positions:
                     ng += 2
 
-                if nxt not in gscore or ng < gscore[nxt]:
-                    gscore[nxt] = ng
-                    h = self.hfun.h(nxt_pos, list(rem), exits)
+                if nxt_state not in gscore or ng < gscore[nxt_state]:
+                    gscore[nxt_state] = ng
+                    h = self.hfun.h(nxt_pos, list(nxt_rem), exits)
+                    if h == float("inf"):
+                        h = 0
                     nf = ng + h
-                    heapq.heappush(openh, (nf, ng, nxt))
+                    heapq.heappush(openh, (nf, ng, nxt_state))
                     if cur == start:
-                        first_move[nxt] = direction
+                        first_move[nxt_state] = direction
                     else:
-                        first_move[nxt] = first_move[cur]
+                        first_move[nxt_state] = first_move[cur]
 
         return self._first_safe_or_best(start_pos)
