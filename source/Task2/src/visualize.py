@@ -100,13 +100,17 @@ class Movement:
 
 
 class GameVisualizer:
-    # Engine hiển thị đồ họa game
+    #Hiển thị đồ họa game
     
     def __init__(self, width: int, height: int, cell_size: int = 30):
         self.width = width
         self.height = height
         self.cell_size = cell_size
         self.info_bar_height = 40
+        # Lưu kích thước cửa sổ ban đầu để khôi phục khi quay lại menu
+        self._initial_width = width
+        self._initial_height = height
+        self._initial_cell_size = cell_size
         
         # Khởi tạo animation và movement
         self.animation = PacmanAnimation()
@@ -118,7 +122,51 @@ class GameVisualizer:
         # Khởi tạo cửa sổ game
         self.screen = pygame.display.set_mode((width * cell_size, height * cell_size + self.info_bar_height))
         pygame.display.set_caption("Pacman Game")
-        self.center_window()
+        
+        # Đặt cửa sổ ở vị trí cố định tốt nhất
+        self.set_optimal_window_position()
+        
+        # Đảm bảo cửa sổ luôn hiển thị ở vị trí tốt nhất
+        self.ensure_window_visible()
+        
+        # Thêm thuộc tính cho mode selection
+        self.show_mode_selection = False
+        self.mode_selection_buttons = []
+        self.create_mode_selection_ui()
+
+    # ---------- Text helpers ----------
+    def get_sysfont(self, size: int, bold: bool = False):
+        try:
+            return pygame.font.SysFont('arial', size, bold=bold)
+        except Exception:
+            return pygame.font.Font(None, size)
+
+    def fit_text_to_rect(self, text: str, target_rect: pygame.Rect, max_size: int = 36, padding: int = 24, bold: bool = False):
+        size = max_size
+        while size >= 12:
+            font = self.get_sysfont(size, bold=bold)
+            w, h = font.size(text)
+            if w <= max(10, target_rect.width - padding) and h <= target_rect.height - 8:
+                return font, font.render(text, True, (255, 255, 255))
+            size -= 2
+        # Fallback with smallest size
+        font = self.get_sysfont(12, bold=bold)
+        return font, font.render(text, True, (255, 255, 255))
+
+    def common_button_font(self, buttons, max_size: int = 40, padding: int = 28, bold: bool = True):
+        size = max_size
+        while size >= 12:
+            font = self.get_sysfont(size, bold=bold)
+            fits_all = True
+            for btn in buttons:
+                w, h = font.size(btn['text'])
+                if w > max(10, btn['rect'].width - padding) or h > btn['rect'].height - 8:
+                    fits_all = False
+                    break
+            if fits_all:
+                return font
+            size -= 2
+        return self.get_sysfont(12, bold=bold)
     
     def load_ghost_image(self):
         # Tải ảnh ghost
@@ -131,7 +179,7 @@ class GameVisualizer:
             self.ghost_image = None
     
     def center_window(self):
-        # Đặt cửa sổ ở giữa màn hình
+        # Đặt cửa sổ ở vị trí tối ưu, tránh bị che khuất
         screen_info = pygame.display.Info()
         screen_width = screen_info.current_w
         screen_height = screen_info.current_h
@@ -139,12 +187,75 @@ class GameVisualizer:
         window_width = self.width * self.cell_size
         window_height = self.height * self.cell_size + self.info_bar_height
         
+        # Tính toán vị trí tối ưu
         x = (screen_width - window_width) // 2
         y = (screen_height - window_height) // 2
         
+        # Đảm bảo cửa sổ không bị che khuất ở các cạnh
+        x = max(50, min(x, screen_width - window_width - 50))
+        y = max(50, min(y, screen_height - window_height - 50))
+        
+        # Đặt cửa sổ ở vị trí tối ưu
         try:
             os.environ['SDL_VIDEO_WINDOW_POS'] = f'{x},{y}'
+            # Đảm bảo cửa sổ luôn ở trên cùng
+            os.environ['SDL_VIDEO_WINDOW_POS_CENTERED'] = '1'
         except:
+            pass
+    
+    def set_optimal_window_position(self):
+        try:
+            # Đặt cửa sổ ở vị trí cố định tốt nhất
+            screen_info = pygame.display.Info()
+            screen_width = screen_info.current_w
+            screen_height = screen_info.current_h
+            
+            window_width = self.width * self.cell_size
+            window_height = self.height * self.cell_size + self.info_bar_height
+            
+            # Vị trí tối ưu: góc trên bên phải với margin lớn
+            x = screen_width - window_width - 100
+            y = 100
+            
+            # Đảm bảo không vượt quá màn hình
+            x = max(100, min(x, screen_width - window_width - 100))
+            y = max(100, min(y, screen_height - window_height - 100))
+            
+            # Đặt vị trí cửa sổ
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f'{x},{y}'
+            
+        except Exception:
+            pass
+    
+    def ensure_window_visible(self):
+        try:
+            # Đặt cửa sổ ở vị trí tối ưu
+            screen_info = pygame.display.Info()
+            screen_width = screen_info.current_w
+            screen_height = screen_info.current_h
+            
+            window_width = self.width * self.cell_size
+            window_height = self.height * self.cell_size + self.info_bar_height
+            
+            # Vị trí tối ưu: giữa màn hình nhưng đảm bảo không bị che
+            x = max(200, (screen_width - window_width) // 2)
+            y = max(200, (screen_height - window_height) // 2)
+            
+            # Đảm bảo không vượt quá màn hình
+            x = min(x, screen_width - window_width - 200)
+            y = min(y, screen_height - window_height - 200)
+            
+            # Đặt vị trí cửa sổ với margin lớn hơn
+            os.environ['SDL_VIDEO_WINDOW_POS'] = f'{x},{y}'
+            
+            # Đảm bảo cửa sổ luôn ở trên cùng và focus
+            pygame.display.flip()
+            
+            # Thử đặt cửa sổ ở vị trí khác nếu cần
+            import time
+            time.sleep(0.1)  # Chờ một chút để cửa sổ được tạo
+            
+        except Exception:
             pass
     
     def resize_window(self, new_width: int, new_height: int):
@@ -163,7 +274,19 @@ class GameVisualizer:
         
         self.screen = pygame.display.set_mode((new_width * self.cell_size, new_height * self.cell_size + self.info_bar_height))
         print(f"Window resized to: {new_width}x{new_height} (cell_size: {self.cell_size})")
-        self.center_window()
+        self.set_optimal_window_position()
+
+    def reset_window(self):
+        # Khôi phục kích thước cửa sổ về kích thước menu ban đầu
+        self.width = self._initial_width
+        self.height = self._initial_height
+        self.cell_size = self._initial_cell_size
+        self.load_ghost_image()
+        self.screen = pygame.display.set_mode((self.width * self.cell_size, self.height * self.cell_size + self.info_bar_height))
+        print(f"Window reset to initial: {self.width}x{self.height} (cell_size: {self.cell_size})")
+        self.set_optimal_window_position()
+        # Đảm bảo cửa sổ luôn hiển thị ở vị trí tốt nhất
+        self.ensure_window_visible()
 
     def clear_screen(self):
         # Xóa màn hình và vẽ background
@@ -365,6 +488,104 @@ class GameVisualizer:
         try_again_surface = font_medium.render(try_again_text, True, (255, 255, 255))
         try_again_rect = try_again_surface.get_rect(center=(center_x, center_y + 20))
         self.screen.blit(try_again_surface, try_again_rect)
+
+    def create_mode_selection_ui(self):
+        # Tạo các nút chọn mode với khoảng cách lớn hơn
+        button_width = 180
+        button_height = 50
+        center_x = (self.width * self.cell_size) // 2
+        center_y = (self.height * self.cell_size + self.info_bar_height) // 2
+        
+        # Nút chế độ tự động - bên trái
+        auto_btn = {
+            'rect': pygame.Rect(center_x - button_width - 20, center_y - 50, button_width, button_height),
+            'text': 'AUTO MODE',
+            'color': (50, 150, 50),
+            'hover_color': (70, 170, 70),
+            'action': 'auto'
+        }
+        
+        # Nút chế độ thủ công - bên phải
+        manual_btn = {
+            'rect': pygame.Rect(center_x + 20, center_y - 50, button_width, button_height),
+            'text': 'MANUAL MODE',
+            'color': (150, 50, 150),
+            'hover_color': (170, 70, 170),
+            'action': 'manual'
+        }
+        
+        # Nút thoát - ở giữa dưới, cách xa 2 nút trên
+        exit_btn = {
+            'rect': pygame.Rect(center_x - button_width//2, center_y + 20, button_width, button_height),
+            'text': 'EXIT',
+            'color': (150, 50, 50),
+            'hover_color': (170, 70, 70),
+            'action': 'exit'
+        }
+        
+        self.mode_selection_buttons = [auto_btn, manual_btn, exit_btn]
+    
+    def show_mode_selection_screen(self):
+        self.show_mode_selection = True
+        
+        # Vẽ background
+        overlay = pygame.Surface((self.width * self.cell_size, self.height * self.cell_size + self.info_bar_height))
+        overlay.set_alpha(200)
+        overlay.fill((0, 0, 0))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Sử dụng font hệ thống để tránh lỗi font
+        font_large = self.get_sysfont(72, bold=True)
+        font_medium = self.get_sysfont(36)
+        
+        center_x = (self.width * self.cell_size) // 2
+        center_y = (self.height * self.cell_size + self.info_bar_height) // 2
+        
+        # Sử dụng text tiếng Anh để tránh lỗi font
+        title_text = "PACMAN GAME"
+        title_surface = font_large.render(title_text, True, (255, 215, 0))
+        title_rect = title_surface.get_rect(center=(center_x, center_y - 150))
+        self.screen.blit(title_surface, title_rect)
+        
+        subtitle_text = "Choose your game mode"
+        subtitle_surface = font_medium.render(subtitle_text, True, (255, 255, 255))
+        # Hạ subtitle xuống một chút để thoáng hơn
+        subtitle_rect = subtitle_surface.get_rect(center=(center_x, center_y - 100))
+        self.screen.blit(subtitle_surface, subtitle_rect)
+        
+        # Đảm bảo buttons được tạo
+        if not hasattr(self, 'mode_selection_buttons') or not self.mode_selection_buttons:
+            self.create_mode_selection_ui()
+        
+        # Vẽ các nút
+        mouse_pos = pygame.mouse.get_pos()
+        # Dùng cùng một cỡ chữ cho tất cả nút để đồng đều
+        button_font = self.common_button_font(self.mode_selection_buttons, max_size=40, padding=28, bold=True)
+        for button in self.mode_selection_buttons:
+            # Kiểm tra hover
+            is_hovered = button['rect'].collidepoint(mouse_pos)
+            color = button['hover_color'] if is_hovered else button['color']
+            
+            # Vẽ nút
+            pygame.draw.rect(self.screen, color, button['rect'], border_radius=10)
+            pygame.draw.rect(self.screen, (255, 255, 255), button['rect'], 2, border_radius=10)
+            
+            # Vẽ text với cùng cỡ chữ đã tính toán
+            text_surface = button_font.render(button['text'], True, (255, 255, 255))
+            text_rect = text_surface.get_rect(center=button['rect'].center)
+            self.screen.blit(text_surface, text_rect)
+    
+    def handle_mode_selection_click(self, pos):
+        for button in self.mode_selection_buttons:
+            if button['rect'].collidepoint(pos):
+                return button['action']
+        return None
+    
+    def hide_mode_selection(self):
+        self.show_mode_selection = False
+    
+    def is_mode_selection_visible(self):
+        return self.show_mode_selection
 
     def update_display(self):
         # Cập nhật màn hình

@@ -1,4 +1,4 @@
-from game import Layout
+from game import IntegratedGameManager as Layout
 from visualize import Direction
 from state import State
 from base_pacman import BasePacmanGame
